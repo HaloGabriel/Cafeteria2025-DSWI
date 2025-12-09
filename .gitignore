@@ -1,0 +1,15 @@
+# Visual Studio
+bin/
+obj/
+*.user
+*.cache
+*.log
+*.vs/
+*.csproj.user
+*.dbmdl
+*.pdb
+*.exe
+*.dll
+*.cache
+*.json
+!appsettings.*.json

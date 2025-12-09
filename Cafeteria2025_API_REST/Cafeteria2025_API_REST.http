@@ -1,0 +1,6 @@
+@Cafeteria2025_API_REST_HostAddress = http://localhost:5208
+
+GET {{Cafeteria2025_API_REST_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
