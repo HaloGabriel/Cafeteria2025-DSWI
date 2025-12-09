@@ -278,8 +278,8 @@ AS
            prod.Activo,
            prod.FechaRegistro
     FROM Producto prod
-    JOIN Categoria cate ON prod.IdCategoria = cate.IdCategoria
-    JOIN Tamano tmno ON prod.IdTamano = tmno.IdTamano
+    LEFT JOIN Categoria cate ON prod.IdCategoria = cate.IdCategoria
+    LEFT JOIN Tamano tmno ON prod.IdTamano = tmno.IdTamano
     WHERE prod.IdProducto = @idproducto
   END
 GO
@@ -328,5 +328,3 @@ AS
     WHERE IdProducto = @idproducto
   END
 GO
-
-Select * From Categoria

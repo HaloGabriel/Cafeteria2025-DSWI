@@ -38,7 +38,7 @@ namespace Cafeteria2025_API_REST.DAO.Impl
             Producto producto = new Producto();
             using var cn = new SqlConnection(config["ConnectionStrings:CafeteriaSQL"]);
             using var cmd = new SqlCommand("USP_Buscar_Producto_Por_ID", cn);
-            cmd.CommandType = CommandType.Text;
+            cmd.CommandType = CommandType.StoredProcedure;
             cmd.Parameters.AddWithValue("@idproducto", id);
             await cn.OpenAsync();
             using var dr = await cmd.ExecuteReaderAsync();
@@ -46,18 +46,18 @@ namespace Cafeteria2025_API_REST.DAO.Impl
             {
                 producto.IdProducto = dr.GetInt32(0);
                 producto.Nombre = dr.GetString(1);
-                producto.Descripcion = dr.GetString(2);
+                producto.Descripcion = await dr.IsDBNullAsync(2) ? null : dr.GetString(2);
                 producto.PrecioBase = dr.GetDecimal(3);
                 producto.TmnProd = new Tamano()
                 {
-                    Nombre = dr.GetString(4)
+                    Nombre = await dr.IsDBNullAsync(4) ? null : dr.GetString(4)
                 };
                 producto.Stock = dr.GetInt32(5);
                 producto.CateProd = new Categoria()
                 {
                     Descripcion = dr.GetString(6)
                 };
-                producto.ImagenUrl = dr.GetString(7);
+                producto.ImagenUrl = await dr.IsDBNullAsync(7) ? null : dr.GetString(7);
                 producto.EsPersonalizable = dr.GetBoolean(8);
                 producto.Activo = dr.GetBoolean(9);
                 producto.FechaRegistro = dr.GetDateTime(10);
@@ -70,7 +70,7 @@ namespace Cafeteria2025_API_REST.DAO.Impl
             Producto producto = new Producto();
             using var cn = new SqlConnection(config["ConnectionStrings:CafeteriaSQL"]);
             using var cmd = new SqlCommand("USP_Buscar_Producto_Por_ID2", cn);
-            cmd.CommandType = CommandType.Text;
+            cmd.CommandType = CommandType.StoredProcedure;
             cmd.Parameters.AddWithValue("@idproducto", id);
             await cn.OpenAsync();
             using var dr = await cmd.ExecuteReaderAsync();
@@ -78,18 +78,18 @@ namespace Cafeteria2025_API_REST.DAO.Impl
             {
                 producto.IdProducto = dr.GetInt32(0);
                 producto.Nombre = dr.GetString(1);
-                producto.Descripcion = dr.GetString(2);
+                producto.Descripcion = await dr.IsDBNullAsync(2) ? null : dr.GetString(2);
                 producto.PrecioBase = dr.GetDecimal(3);
                 producto.TmnProd = new Tamano()
                 {
-                    IdTamano = dr.GetInt32(4)
+                    IdTamano = await dr.IsDBNullAsync(4) ? 0 : dr.GetInt32(4)
                 };
                 producto.Stock = dr.GetInt32(5);
                 producto.CateProd = new Categoria()
                 {
                     IdCategoria = dr.GetInt32(6)
                 };
-                producto.ImagenUrl = dr.GetString(7);
+                producto.ImagenUrl = await dr.IsDBNullAsync(7) ? null : dr.GetString(7);
                 producto.EsPersonalizable = dr.GetBoolean(8);
                 producto.Activo = dr.GetBoolean(9);
             }
