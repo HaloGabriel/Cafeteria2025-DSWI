@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Cafeteria2025_API_REST.Controllers
 {
     [ApiController]
-    [Route("API/[controller]")]
+    [Route("api/[controller]")]
     public class ProductoAPIController : ControllerBase
     {
         private readonly IProductoDAO productoDAO;
