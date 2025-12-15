@@ -38,7 +38,6 @@ namespace Cafeteria2025_API_REST.DAO.Impl
                 categoria.IdCategoria = dr.GetInt32(0);
                 categoria.Descripcion = dr.GetString(1);
                 categoria.Activo = dr.GetBoolean(2);
-                categoria.FechaRegistro = dr.GetDateTime(3);
             }
             return categoria;
         }
@@ -66,8 +65,7 @@ namespace Cafeteria2025_API_REST.DAO.Impl
                 {
                     IdCategoria = dr.GetInt32(0),
                     Descripcion = dr.GetString(1),
-                    Activo = dr.GetBoolean(2),
-                    FechaRegistro = dr.GetDateTime(3)
+                    Activo = dr.GetBoolean(2)
                 });
             }
             return temporal;
@@ -85,9 +83,7 @@ namespace Cafeteria2025_API_REST.DAO.Impl
                 temporal.Add(new Categoria()
                 {
                     IdCategoria = dr.GetInt32(0),
-                    Descripcion = dr.GetString(1),
-                    Activo = dr.GetBoolean(2),
-                    FechaRegistro = dr.GetDateTime(3)
+                    Descripcion = dr.GetString(1)
                 });
             }
             return temporal;

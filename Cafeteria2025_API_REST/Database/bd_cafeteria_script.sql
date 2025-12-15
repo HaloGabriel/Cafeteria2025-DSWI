@@ -197,6 +197,7 @@ AS
     SELECT IdCategoria,
            Descripcion
     FROM Categoria
+    WHERE Activo = 1
     ORDER BY Descripcion ASC
   END
 GO
