@@ -183,7 +183,9 @@ GO
 CREATE OR ALTER PROCEDURE USP_Listar_Categorias
 AS
   BEGIN
-    SELECT *
+    SELECT IdCategoria,
+           Descripcion,
+           Activo
     FROM Categoria
   END
 GO
@@ -192,8 +194,10 @@ GO
 CREATE OR ALTER PROCEDURE USP_Listar_Categorias_Descripcion_Asc
 AS
   BEGIN
-    SELECT *
+    SELECT IdCategoria,
+           Descripcion
     FROM Categoria
+    WHERE Activo = 1
     ORDER BY Descripcion ASC
   END
 GO
@@ -202,7 +206,9 @@ CREATE OR ALTER PROCEDURE USP_Buscar_Categoria_Por_ID
 @idcategoria INT
 AS
   BEGIN
-    SELECT *
+    SELECT IdCategoria,
+           Descripcion,
+           Activo
     FROM Categoria
     WHERE IdCategoria = @idcategoria
   END
