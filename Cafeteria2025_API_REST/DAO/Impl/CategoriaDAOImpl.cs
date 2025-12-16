@@ -12,7 +12,7 @@ namespace Cafeteria2025_API_REST.DAO.Impl
             this.config = config;
         }
 
-        public async void Actualizar(Categoria reg)
+        public async Task Actualizar(CategoriaUpdate reg)
         {
             using var cn = new SqlConnection(config["ConnectionStrings:CafeteriaSQL"]);
             using var cmd = new SqlCommand("USP_Actualizar_Categoria", cn);
@@ -38,11 +38,12 @@ namespace Cafeteria2025_API_REST.DAO.Impl
                 categoria.IdCategoria = dr.GetInt32(0);
                 categoria.Descripcion = dr.GetString(1);
                 categoria.Activo = dr.GetBoolean(2);
+                categoria.FechaRegistro = dr.GetDateTime(3);
             }
             return categoria;
         }
 
-        public async void Insertar(Categoria reg)
+        public async Task Insertar(CategoriaCreate reg)
         {
             using var cn = new SqlConnection(config["ConnectionStrings:CafeteriaSQL"]);
             using var cmd = new SqlCommand("USP_Insertar_Categoria", cn);
@@ -65,22 +66,23 @@ namespace Cafeteria2025_API_REST.DAO.Impl
                 {
                     IdCategoria = dr.GetInt32(0),
                     Descripcion = dr.GetString(1),
-                    Activo = dr.GetBoolean(2)
+                    Activo = dr.GetBoolean(2),
+                    FechaRegistro = dr.GetDateTime(3)
                 });
             }
             return temporal;
         }
 
-        public async Task<IEnumerable<Categoria>> ListarDescripcionAsc()
+        public async Task<IEnumerable<CategoriaSelectList>> ListarDescripcionAsc()
         {
-            List<Categoria> temporal = new List<Categoria>();
+            List<CategoriaSelectList> temporal = new List<CategoriaSelectList>();
             using var cn = new SqlConnection(config["ConnectionStrings:CafeteriaSQL"]);
             using var cmd = new SqlCommand("USP_Listar_Categorias_Descripcion_Asc", cn);
             await cn.OpenAsync();
             using var dr = await cmd.ExecuteReaderAsync();
             while (await dr.ReadAsync())
             {
-                temporal.Add(new Categoria()
+                temporal.Add(new CategoriaSelectList()
                 {
                     IdCategoria = dr.GetInt32(0),
                     Descripcion = dr.GetString(1)

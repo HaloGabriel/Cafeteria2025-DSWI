@@ -1,8 +1,5 @@
 ﻿using Cafeteria2025_API_REST.DAO;
 using Cafeteria2025_API_REST.Models;
-using Cafeteria2025_API_REST.Models.Dtos.Request;
-using Cafeteria2025_API_REST.Models.Dtos.Response;
-using Mapster;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Cafeteria2025_API_REST.Controllers
@@ -20,50 +17,55 @@ namespace Cafeteria2025_API_REST.Controllers
         // ===============================
         // LISTAR CATEGORIAS
         // ===============================
-        [HttpGet("Lista")] public async Task<ActionResult> Lista()
+        [HttpGet("Lista")] public async Task<ActionResult<List<Categoria>>> Lista()
         {
-            var response = await categoriaDAO.Listar();
-            var lista = response.Adapt<List<GetCategoriaResponse>>();
+            var lista = await categoriaDAO.Listar();
             return Ok(lista);
         }
 
         // ===============================
         // LISTAR CATEGORIAS POR DESCRIPCION
         // ===============================
-        [HttpGet("Lista/Sort/Descripcion")] public async Task<ActionResult> ListaDescripcionAsc()
+        [HttpGet("Lista/Sort/Descripcion")] public async Task<ActionResult<CategoriaSelectList>> ListaDescripcionAsc()
         {
-            var response = await categoriaDAO.ListarDescripcionAsc();
-            var lista = response.Adapt<List<GetCategoriaResponse2>>();
+            var lista = await categoriaDAO.ListarDescripcionAsc();
             return Ok(lista);
         }
 
         // ===============================
         // BUSCAR POR ID
         // ===============================
-        [HttpGet("{id}")] public async Task<ActionResult> BuscarPorId(int id = 0)
+        [HttpGet("{id}")] public async Task<ActionResult<Categoria>> BuscarPorId(int id = 0)
         {
-            var response = await categoriaDAO.Buscar(id);
-            var categoria = response.Adapt<GetCategoriaResponse>();
+            var categoria = await categoriaDAO.Buscar(id);
+
+            if (categoria == null)
+                return NotFound("¡Categoría no encontrada!");
+
             return Ok(categoria);
         }
 
         // ===============================
         // REGISTRAR CATEGORIA
         // ===============================
-        [HttpPost] public async Task<ActionResult> Registrar(Categoria reg)
+        [HttpPost] public async Task<ActionResult> Registrar(CategoriaCreate reg)
         {
-            var categoria = reg.Adapt<Categoria>();
-            await Task.Run(() => categoriaDAO.Insertar(categoria));
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            await categoriaDAO.Insertar(reg);
             return Ok("¡Categoría registrada!");
         }
 
         // ===============================
         // ACTUALIZAR CATEGORIA
         // ===============================
-        [HttpPut] public async Task<ActionResult> Actualizar(Categoria reg)
+        [HttpPut] public async Task<ActionResult> Actualizar(CategoriaUpdate reg)
         {
-            var categoria = reg.Adapt<Categoria>();
-            await Task.Run(() => categoriaDAO.Actualizar(categoria));
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            await categoriaDAO.Actualizar(reg);
             return Ok("¡Categoría actualizada!");
         }
     }
