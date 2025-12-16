@@ -1,8 +1,5 @@
 ﻿using Cafeteria2025_API_REST.DAO;
 using Cafeteria2025_API_REST.Models;
-using Cafeteria2025_API_REST.Models.Dtos.Request;
-using Cafeteria2025_API_REST.Models.Dtos.Response;
-using Mapster;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Cafeteria2025_API_REST.Controllers
@@ -22,8 +19,7 @@ namespace Cafeteria2025_API_REST.Controllers
         // ===============================
         [HttpGet("Lista")] public async Task<ActionResult> Lista()
         {
-            var response = await categoriaDAO.Listar();
-            var lista = response.Adapt<List<GetCategoriaResponse>>();
+            var lista = await categoriaDAO.Listar();
             return Ok(lista);
         }
 
@@ -32,8 +28,7 @@ namespace Cafeteria2025_API_REST.Controllers
         // ===============================
         [HttpGet("Lista/Sort/Descripcion")] public async Task<ActionResult> ListaDescripcionAsc()
         {
-            var response = await categoriaDAO.ListarDescripcionAsc();
-            var lista = response.Adapt<List<GetCategoriaResponse2>>();
+            var lista = await categoriaDAO.ListarDescripcionAsc();
             return Ok(lista);
         }
 
@@ -42,8 +37,7 @@ namespace Cafeteria2025_API_REST.Controllers
         // ===============================
         [HttpGet("{id}")] public async Task<ActionResult> BuscarPorId(int id = 0)
         {
-            var response = await categoriaDAO.Buscar(id);
-            var categoria = response.Adapt<GetCategoriaResponse>();
+            var categoria = await categoriaDAO.Buscar(id);
             return Ok(categoria);
         }
 
@@ -52,8 +46,7 @@ namespace Cafeteria2025_API_REST.Controllers
         // ===============================
         [HttpPost] public async Task<ActionResult> Registrar(Categoria reg)
         {
-            var categoria = reg.Adapt<Categoria>();
-            await Task.Run(() => categoriaDAO.Insertar(categoria));
+            await Task.Run(() => categoriaDAO.Insertar(reg));
             return Ok("¡Categoría registrada!");
         }
 
@@ -62,8 +55,7 @@ namespace Cafeteria2025_API_REST.Controllers
         // ===============================
         [HttpPut] public async Task<ActionResult> Actualizar(Categoria reg)
         {
-            var categoria = reg.Adapt<Categoria>();
-            await Task.Run(() => categoriaDAO.Actualizar(categoria));
+            await Task.Run(() => categoriaDAO.Actualizar(reg));
             return Ok("¡Categoría actualizada!");
         }
     }
