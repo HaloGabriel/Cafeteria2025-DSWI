@@ -85,7 +85,10 @@ namespace Cafeteria2025_API_REST.Configs
                 .AfterMapping((src, dest) =>
                 {
                     dest.CateProd = new Categoria { IdCategoria = src.idCategory };
-                    dest.TmnProd = new Tamano { IdTamano = src.idSize };
+                    if (src.idSize.HasValue)
+                        dest.TmnProd = new Tamano { IdTamano = src.idSize.Value };
+                    else
+                        dest.TmnProd = null;
                 });
 
             TypeAdapterConfig<PutProductoRequest, Producto>
@@ -102,7 +105,10 @@ namespace Cafeteria2025_API_REST.Configs
                 .AfterMapping((src, dest) =>
                 {
                     dest.CateProd = new Categoria { IdCategoria = src.idCategory };
-                    dest.TmnProd = new Tamano { IdTamano = src.idSize };
+                    if (src.idSize.HasValue)
+                        dest.TmnProd = new Tamano { IdTamano = src.idSize.Value };
+                    else
+                        dest.TmnProd = null;
                 }); ;
         }
     }
