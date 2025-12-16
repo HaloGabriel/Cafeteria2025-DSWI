@@ -8,9 +8,11 @@
         public string? Email { get; set; }
         public string? PasswordHash { get; set; }
         public string? Telefono { get; set; }
-        public Rol? RolUsua { get; set; }
+
+        public byte IdRol { get; set; }
+
         public bool Activo { get; set; }
-        public DateTime FechaRegistro { get; set; }
+        public DateTime FechaRegistro { get; set; }   
         public DateTime? FechaActualizacion { get; set; }
         public string? UsuarioActualizacion { get; set; }
     }

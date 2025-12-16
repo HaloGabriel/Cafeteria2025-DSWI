@@ -16,11 +16,16 @@ namespace Cafeteria2025_API_REST.Controllers
         }
 
 
-
+        // ===============================
+        // LISTAR USUARIOS
+        // ===============================
         [HttpGet("Listar Usuarios")]
         public async Task<IActionResult> Listar()
         => Ok(await _usudao.Listar());
 
+        // ===============================
+        // BUSCAR POR ID
+        // ===============================
         [HttpGet("{id}")]
         public async Task<IActionResult> Buscar(int id)
         {
@@ -28,6 +33,9 @@ namespace Cafeteria2025_API_REST.Controllers
             return u is null ? NotFound() : Ok(u);
         }
 
+        // ===============================
+        // AÑADIR NUEVO USUARIO
+        // ===============================
         [HttpPost("Añadir nuevo Usuario")]
         public async Task<IActionResult> Crear([FromBody] Usuario usu)
         {
@@ -35,6 +43,9 @@ namespace Cafeteria2025_API_REST.Controllers
             return Ok(ok);
         }
 
+        // ===============================
+        // ACTUALIZAR POR ID
+        // ===============================
         [HttpPut("{id}")]
         public async Task<IActionResult> Actualizar(int id, [FromBody] Usuario usu)
         {
@@ -42,11 +53,15 @@ namespace Cafeteria2025_API_REST.Controllers
             return Ok(ok);
         }
 
+        // ===============================
+        // DESACTIVAR POR ID
+        // ===============================
+
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Eliminar(int id)
+        public async Task<IActionResult> Desactivar(int id)
         {
-            var ok = await _usudao.Eliminar(id, "admin");
-            return Ok(ok);
+            await _usudao.Desactivar(id);
+            return Ok("Usuario desactivado");
         }
 
 

@@ -177,6 +177,14 @@ VALUES ('admin', 'admin', 'admin@admin.com',
         1, DEFAULT, DEFAULT)
 GO
 
+INSERT INTO EstadoPedido (Descripcion)
+VALUES ('Generado'),
+       ('Preparando'),
+       ('Listo para recojo'),
+       ('Recogido'),
+       ('Cancelado');
+GO
+
 --Procedimientos almacenados
 
 --Listado de categorías para el CRUD
@@ -236,10 +244,10 @@ AS
   END
 GO
 
---Mostrar en el listado los 5 datos más importantes de los productos
+--Mostrar en el listado los 5 datos más importantes de los productos (mientas estén activos)
 CREATE OR ALTER PROCEDURE USP_Listar_Productos
 AS
-  BEGIN
+BEGIN
     SELECT prod.IdProducto,
            prod.Nombre,
            cate.Descripcion,
@@ -247,8 +255,10 @@ AS
            prod.Stock
     FROM Producto prod
     JOIN Categoria cate ON prod.IdCategoria = cate.IdCategoria
-  END
+    WHERE prod.Activo = 1;
+END
 GO
+
 
 CREATE OR ALTER PROCEDURE USP_Insertar_Producto
 @nombre NVARCHAR(150), @desc NVARCHAR(1000) = NULL,
@@ -333,4 +343,760 @@ AS
         UsuarioActualizacion = @userupdate
     WHERE IdProducto = @idproducto
   END
+GO
+/* Obtener o crear pedido activo */
+
+CREATE OR ALTER PROCEDURE USP_ObtenerOCrearPedidoGenerado
+@idUsuario INT
+AS
+BEGIN
+    DECLARE @idPedido INT;
+
+    SELECT @idPedido = IdPedido
+    FROM Pedido
+    WHERE IdUsuario = @idUsuario
+      AND IdEstadoPedido = 1
+      AND Activo = 1;
+
+    IF @idPedido IS NULL
+    BEGIN
+        INSERT INTO Pedido (
+            IdUsuario,
+            IdEstadoPedido,
+            TotalPagar,
+            NombreClienteRecoge,
+            CodigoRecojo,
+            EsRecojoInmediato
+        )
+        VALUES (
+            @idUsuario,
+            1,
+            0,
+            'Pendiente',
+            NEWID(),
+            1
+        );
+
+        SET @idPedido = SCOPE_IDENTITY();
+    END
+
+    SELECT @idPedido;
+END
+GO
+
+/* Agregar producto al pedido */
+
+CREATE OR ALTER PROCEDURE USP_AgregarProductoPedido
+@idPedido INT,
+@idProducto INT,
+@cantidad INT
+AS
+BEGIN
+    DECLARE @precio DECIMAL(10,2);
+
+    -- Obtener precio base del producto
+    SELECT @precio = PrecioBase
+    FROM Producto
+    WHERE IdProducto = @idProducto
+      AND Activo = 1;
+
+    IF @precio IS NULL
+    BEGIN
+        RAISERROR('Producto no encontrado o inactivo', 16, 1);
+        RETURN;
+    END
+
+    -- Si el producto ya existe en el pedido, sumamos cantidad
+    IF EXISTS (
+        SELECT 1
+        FROM DetallePedido
+        WHERE IdPedido = @idPedido
+          AND IdProducto = @idProducto
+    )
+    BEGIN
+        UPDATE DetallePedido
+        SET Cantidad = Cantidad + @cantidad
+        WHERE IdPedido = @idPedido
+          AND IdProducto = @idProducto;
+    END
+    ELSE
+    BEGIN
+        INSERT INTO DetallePedido (
+            IdPedido,
+            IdProducto,
+            Cantidad,
+            PrecioUnitarioFinal
+        )
+        VALUES (
+            @idPedido,
+            @idProducto,
+            @cantidad,
+            @precio
+        );
+    END
+END
+GO
+
+/* Listar Pedido (carrito) */
+
+CREATE OR ALTER PROCEDURE USP_ListarPedidoGenerado
+@idUsuario INT
+AS
+BEGIN
+    SELECT dp.IdDetallePedido,
+           p.Nombre,
+           dp.Cantidad,
+           dp.PrecioUnitarioFinal,
+           dp.Subtotal
+    FROM Pedido pe
+    JOIN DetallePedido dp ON pe.IdPedido = dp.IdPedido
+    JOIN Producto p ON dp.IdProducto = p.IdProducto
+    WHERE pe.IdUsuario = @idUsuario
+      AND pe.IdEstadoPedido = 1
+      AND pe.Activo = 1;
+END
+GO
+
+/* Desactivar Producto */
+CREATE OR ALTER PROCEDURE USP_Desactivar_Producto
+@idproducto INT,
+@userupdate NVARCHAR(255) = NULL
+AS
+BEGIN
+    UPDATE Producto
+    SET Activo = 0,
+        FechaActualizacion = SYSDATETIME(),
+        UsuarioActualizacion = @userupdate
+    WHERE IdProducto = @idproducto;
+END
+GO
+
+/*  VALIDAR STOCK */
+CREATE OR ALTER PROCEDURE USP_ValidarStockPedido
+@idPedido INT
+AS
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM DetallePedido dp
+        JOIN Producto p ON dp.IdProducto = p.IdProducto
+        WHERE dp.IdPedido = @idPedido
+          AND p.Stock < dp.Cantidad
+    )
+    BEGIN
+        RAISERROR('Stock insuficiente para uno o más productos', 16, 1);
+        RETURN;
+    END
+END
+GO
+
+/* DESCONTAR STOCK */
+CREATE OR ALTER PROCEDURE USP_DescontarStockPedido
+@idPedido INT
+AS
+BEGIN
+    UPDATE p
+    SET p.Stock = p.Stock - dp.Cantidad
+    FROM Producto p
+    JOIN DetallePedido dp ON p.IdProducto = dp.IdProducto
+    WHERE dp.IdPedido = @idPedido;
+END
+GO
+
+/* CONFIRMAR PEDIDO */
+CREATE OR ALTER PROCEDURE USP_ConfirmarPedido
+@idPedido INT,
+@idMetodoPago TINYINT
+AS
+BEGIN
+    BEGIN TRY
+        BEGIN TRAN;
+
+        /* 1. Validar stock */
+        EXEC USP_ValidarStockPedido @idPedido;
+
+        /* 2. Descontar stock */
+        EXEC USP_DescontarStockPedido @idPedido;
+
+        /* 3. Calcular TOTAL del pedido */
+        DECLARE @total DECIMAL(12,2);
+
+        SELECT @total = ISNULL(SUM(Subtotal), 0)
+        FROM DetallePedido
+        WHERE IdPedido = @idPedido;
+
+        /* 4. Actualizar pedido */
+        UPDATE Pedido
+        SET TotalPagar = @total,
+            IdEstadoPedido = 2, -- Preparando
+            IdMetodoPago = @idMetodoPago,
+            FechaActualizacion = SYSDATETIME()
+        WHERE IdPedido = @idPedido;
+
+        COMMIT;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK;
+        THROW;
+    END CATCH
+END
+GO
+
+
+/* DEVOLVER STOCK DEL PEDIDO */
+CREATE OR ALTER PROCEDURE USP_DevolverStockPedido
+@idPedido INT
+AS
+BEGIN
+    UPDATE p
+    SET p.Stock = p.Stock + dp.Cantidad
+    FROM Producto p
+    JOIN DetallePedido dp ON p.IdProducto = dp.IdProducto
+    WHERE dp.IdPedido = @idPedido;
+END
+GO
+
+/* CANCELAR PEDIDO */
+CREATE OR ALTER PROCEDURE USP_CancelarPedido
+@idPedido INT
+AS
+BEGIN
+    BEGIN TRY
+        BEGIN TRAN;
+
+        -- Validar estado cancelable
+        IF NOT EXISTS (
+            SELECT 1
+            FROM Pedido
+            WHERE IdPedido = @idPedido
+              AND IdEstadoPedido IN (1, 2) -- Generado o Preparando
+              AND Activo = 1
+        )
+        BEGIN
+            RAISERROR('El pedido no puede ser cancelado', 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
+
+        -- Devolver stock
+        EXEC USP_DevolverStockPedido @idPedido;
+
+        -- Cambiar estado a Cancelado
+        UPDATE Pedido
+        SET IdEstadoPedido = 5, -- Cancelado
+            FechaActualizacion = SYSDATETIME()
+        WHERE IdPedido = @idPedido;
+
+        COMMIT;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK;
+        THROW;
+    END CATCH
+END
+GO
+
+/* Cambiar estado del pedido */
+CREATE OR ALTER PROCEDURE USP_CambiarEstadoPedido
+@idPedido INT,
+@idNuevoEstado TINYINT
+AS
+BEGIN
+    -- Validar pedido activo
+    IF NOT EXISTS (
+        SELECT 1
+        FROM Pedido
+        WHERE IdPedido = @idPedido
+          AND Activo = 1
+    )
+    BEGIN
+        RAISERROR('Pedido no existe o no está activo', 16, 1);
+        RETURN;
+    END
+
+    -- No permitir volver atrás
+    IF EXISTS (
+        SELECT 1
+        FROM Pedido
+        WHERE IdPedido = @idPedido
+          AND IdEstadoPedido >= @idNuevoEstado
+    )
+    BEGIN
+        RAISERROR('Transición de estado no válida', 16, 1);
+        RETURN;
+    END
+
+    -- Actualizar estado
+    UPDATE Pedido
+    SET IdEstadoPedido = @idNuevoEstado,
+        FechaActualizacion = SYSDATETIME()
+    WHERE IdPedido = @idPedido;
+END
+GO
+
+/* VER PEDIDOS OPERATIVOS */
+CREATE OR ALTER PROCEDURE USP_ListarPedidosOperativos
+AS
+BEGIN
+    SELECT 
+        p.IdPedido,
+        u.Nombre + ' ' + u.Apellido AS Cliente,
+        p.FechaPedido,
+        ep.Descripcion AS Estado,
+        p.TotalPagar,
+        p.CodigoRecojo
+    FROM Pedido p
+    JOIN Usuario u ON p.IdUsuario = u.IdUsuario
+    JOIN EstadoPedido ep ON p.IdEstadoPedido = ep.IdEstadoPedido
+    WHERE p.IdEstadoPedido IN (2, 3) -- Preparando, Listo
+      AND p.Activo = 1
+    ORDER BY p.FechaPedido ASC;
+END
+GO
+
+
+
+
+SELECT * FROM MetodoPago
+
+INSERT INTO MetodoPago (Nombre, Activo)
+VALUES 
+    ('Efectivo', 1),
+    ('Transferencia Bancaria', 1),
+    ('PayPal', 1),
+    ('Criptomonedas', 0); -- Ejemplo de un método inactivo
+
+
+    /* PERSONALIZACIÓN */
+
+CREATE TYPE TVP_Opciones AS TABLE (
+IdOpcion INT);
+GO
+
+CREATE OR ALTER PROCEDURE USP_AgregarProductoPersonalizado
+    @idUsuario INT,
+    @idProducto INT,
+    @cantidad INT,
+    @Opciones TVP_Opciones READONLY
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        BEGIN TRAN;
+
+        DECLARE @idPedido INT;
+        DECLARE @idDetallePedido INT;
+        DECLARE @precioBase DECIMAL(10,2);
+        DECLARE @precioFinal DECIMAL(10,2);
+
+        /* 1. Obtener o crear pedido (carrito) */
+        SELECT @idPedido = IdPedido
+        FROM Pedido
+        WHERE IdUsuario = @idUsuario
+          AND IdEstadoPedido = 1
+          AND Activo = 1;
+
+        IF @idPedido IS NULL
+        BEGIN
+            INSERT INTO Pedido (
+                IdUsuario, IdEstadoPedido, TotalPagar,
+                NombreClienteRecoge, CodigoRecojo, EsRecojoInmediato
+            )
+            VALUES (
+                @idUsuario, 1, 0,
+                'Pendiente', NEWID(), 1
+            );
+
+            SET @idPedido = SCOPE_IDENTITY();
+        END
+
+        /* 2. Validar producto */
+        SELECT @precioBase = PrecioBase
+        FROM Producto
+        WHERE IdProducto = @idProducto
+          AND Activo = 1;
+
+        IF @precioBase IS NULL
+        BEGIN
+            RAISERROR('Producto no válido o inactivo', 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
+
+        /* 3. Insertar detalle */
+        INSERT INTO DetallePedido (
+            IdPedido, IdProducto, Cantidad, PrecioUnitarioFinal
+        )
+        VALUES (
+            @idPedido, @idProducto, @cantidad, @precioBase
+        );
+
+        SET @idDetallePedido = SCOPE_IDENTITY();
+
+        /* 4. Insertar opciones */
+        INSERT INTO PedidoOpcionDetalle (
+            IdDetallePedido, IdOpcion, CostoAplicado
+        )
+        SELECT
+            @idDetallePedido,
+            o.IdOpcion,
+            o.CostoAdicional
+        FROM Opcion o
+        JOIN @Opciones tvp ON o.IdOpcion = tvp.IdOpcion
+        WHERE o.Activo = 1;
+
+        /* 5. Calcular precio final */
+        SELECT @precioFinal =
+            @precioBase + ISNULL(SUM(CostoAplicado), 0)
+        FROM PedidoOpcionDetalle
+        WHERE IdDetallePedido = @idDetallePedido;
+
+        UPDATE DetallePedido
+        SET PrecioUnitarioFinal = @precioFinal
+        WHERE IdDetallePedido = @idDetallePedido;
+
+        COMMIT;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK;
+        THROW;
+    END CATCH
+END
+GO
+
+/* Añadir Opcion Grupos */ 
+CREATE OR ALTER PROCEDURE USP_InsertarOpcionGrupo
+@nombre NVARCHAR(100),
+@descripcion NVARCHAR(250),
+@esRequerido BIT,
+@maximo INT = NULL,
+@tipoControl NVARCHAR(50)
+AS
+BEGIN
+    INSERT INTO OpcionGrupo (
+        Nombre, Descripcion, EsRequerido, Maximo, TipoControl, Activo
+    )
+    VALUES (
+        @nombre, @descripcion, @esRequerido, @maximo, @tipoControl, 1
+    );
+END
+GO
+
+/* Añadir opciones */
+CREATE OR ALTER PROCEDURE USP_InsertarOpcion
+@idGrupo INT,
+@nombre NVARCHAR(150),
+@costo DECIMAL(10,2)
+AS
+BEGIN
+    INSERT INTO Opcion (
+        IdGrupo, NombreOpcion, CostoAdicional, Activo
+    )
+    VALUES (
+        @idGrupo, @nombre, @costo, 1
+    );
+END
+GO
+
+/* Asignar opciones a productos */
+CREATE OR ALTER PROCEDURE USP_AsignarOpcionProducto
+@idProducto INT,
+@idOpcion INT
+AS
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM Producto
+        WHERE IdProducto = @idProducto AND EsPersonalizable = 1
+    )
+    BEGIN
+        RAISERROR('Producto no es personalizable', 16, 1);
+        RETURN;
+    END
+
+    INSERT INTO ProductoOpcion (IdProducto, IdOpcion)
+    VALUES (@idProducto, @idOpcion);
+END
+GO
+
+CREATE OR ALTER PROCEDURE USP_ListarOpcionesPorProducto
+@idProducto INT
+AS
+BEGIN
+    SELECT 
+        og.IdGrupo,
+        og.Nombre AS Grupo,
+        og.TipoControl,
+        og.EsRequerido,
+        og.Maximo,
+        o.IdOpcion,
+        o.NombreOpcion,
+        o.CostoAdicional
+    FROM ProductoOpcion po
+    JOIN Opcion o ON po.IdOpcion = o.IdOpcion
+    JOIN OpcionGrupo og ON o.IdGrupo = og.IdGrupo
+    WHERE po.IdProducto = @idProducto
+      AND o.Activo = 1
+      AND og.Activo = 1;
+END
+GO
+
+/* TAMAÑOS */
+/* LISTAR */
+CREATE OR ALTER PROCEDURE USP_Listar_Tamanos
+AS
+BEGIN
+    SELECT
+        IdTamano,
+        Nombre,
+        Descripcion,
+        CostoAdicional,
+        Activo
+    FROM Tamano
+    WHERE Activo = 1;
+END
+GO
+
+
+/* INSERTAR TAMAÑOS */
+CREATE OR ALTER PROCEDURE USP_Insertar_Tamano
+@nom NVARCHAR(50),
+@desc NVARCHAR(150) = NULL,
+@costo DECIMAL(10,2),
+@activo BIT
+AS
+BEGIN
+    INSERT INTO Tamano (
+        Nombre,
+        Descripcion,
+        CostoAdicional,
+        Activo
+    )
+    VALUES (
+        @nom,
+        @desc,
+        @costo,
+        @activo
+    );
+END
+GO
+
+
+/* BUSCAR TAMAÑO POR ID */
+CREATE OR ALTER PROCEDURE USP_Buscar_Tamano_Por_Id
+@id TINYINT
+AS
+BEGIN
+    SELECT
+        IdTamano,
+        Nombre,
+        Descripcion,
+        CostoAdicional,
+        Activo
+    FROM Tamano
+    WHERE IdTamano = @id;
+END
+GO
+
+
+/* ACTUALIZAR TAMAÑO */
+CREATE OR ALTER PROCEDURE USP_Actualizar_Tamano
+@id TINYINT,
+@nom NVARCHAR(50),
+@desc NVARCHAR(150) = NULL,
+@costo DECIMAL(10,2),
+@activo BIT
+AS
+BEGIN
+    UPDATE Tamano
+    SET Nombre = @nom,
+        Descripcion = @desc,
+        CostoAdicional = @costo,
+        Activo = @activo
+    WHERE IdTamano = @id;
+END
+GO
+
+
+/* ELIMINAR LOGICAMENTE */
+CREATE OR ALTER PROCEDURE USP_Desactivar_Tamano
+@idTamano TINYINT
+AS
+BEGIN
+    UPDATE Tamano
+    SET Activo = 0
+    WHERE IdTamano = @idTamano;
+END
+GO
+
+/* USUARIO */
+/* LISTAR USUARIO */
+CREATE OR ALTER PROCEDURE USP_Listar_Usuarios
+AS
+BEGIN
+    SELECT
+        IdUsuario,
+        Nombre,
+        Apellido,
+        Email,
+        PasswordHash,
+        Telefono,
+        IdRol,                 
+        Activo,
+        FechaRegistro,
+        FechaActualizacion,
+        UsuarioActualizacion
+    FROM Usuario
+    WHERE Activo = 1;
+END
+GO
+
+
+
+/* BUSCAR POR ID */
+CREATE OR ALTER PROCEDURE USP_Buscar_Usuario_Por_Id
+@id INT
+AS
+BEGIN
+    SELECT 
+        IdUsuario,
+        Nombre,
+        Apellido,
+        Email,
+        PasswordHash,
+        Telefono,
+        IdRol,
+        Activo,
+        FechaRegistro,
+        FechaActualizacion,
+        UsuarioActualizacion
+    FROM Usuario
+    WHERE IdUsuario = @id;
+END
+GO
+
+
+/* INSERTAR USUARIO */
+CREATE OR ALTER PROCEDURE USP_Insertar_Usuario
+@nom NVARCHAR(100),
+@ape NVARCHAR(100),
+@email NVARCHAR(255),
+@pass NVARCHAR(500),
+@tel NVARCHAR(15) = NULL,
+@rol TINYINT,
+@user NVARCHAR(255)
+AS
+BEGIN
+    INSERT INTO Usuario (
+        Nombre,
+        Apellido,
+        Email,
+        PasswordHash,
+        Telefono,
+        IdRol,
+        Activo,
+        FechaRegistro,
+        UsuarioActualizacion
+    )
+    VALUES (
+        @nom,
+        @ape,
+        @email,
+        @pass,
+        @tel,
+        @rol,
+        1,
+        SYSDATETIME(),
+        @user
+    );
+END
+GO
+
+
+/* ACTUALIZR USUARIO */
+CREATE OR ALTER PROCEDURE USP_Actualizar_Usuario
+@id INT,
+@nom NVARCHAR(100),
+@ape NVARCHAR(100),
+@email NVARCHAR(255),
+@pass NVARCHAR(500),
+@tel NVARCHAR(15) = NULL,
+@rol TINYINT,
+@user NVARCHAR(255)
+AS
+BEGIN
+    UPDATE Usuario
+    SET Nombre = @nom,
+        Apellido = @ape,
+        Email = @email,
+        PasswordHash = @pass,
+        Telefono = @tel,
+        IdRol = @rol,
+        FechaActualizacion = SYSDATETIME(),
+        UsuarioActualizacion = @user
+    WHERE IdUsuario = @id;
+END
+GO
+
+
+/* DESACTIVAR */
+CREATE OR ALTER PROCEDURE USP_Desactivar_Usuario
+@idUsuario INT
+AS
+BEGIN
+    UPDATE Usuario
+    SET Activo = 0,
+        FechaActualizacion = SYSDATETIME()
+    WHERE IdUsuario = @idUsuario;
+END
+GO
+
+/* LISTAR ROLES */
+CREATE OR ALTER PROCEDURE USP_Listar_Roles
+AS
+BEGIN
+    SELECT
+        IdRol,
+        Nombre,
+        Descripcion,
+        Activo
+    FROM Rol
+    WHERE Activo = 1;
+END
+GO
+
+/* HISTORIAL POR USUARIO */
+CREATE OR ALTER PROCEDURE USP_Listar_Historial_Pedidos_Usuario
+@idUsuario INT
+AS
+BEGIN
+    SELECT
+        p.IdPedido,
+        p.FechaPedido,
+        ep.Descripcion AS Estado,
+        p.TotalPagar,
+        p.NombreClienteRecoge,
+        p.CodigoRecojo
+    FROM Pedido p
+    JOIN EstadoPedido ep ON p.IdEstadoPedido = ep.IdEstadoPedido
+    WHERE p.IdUsuario = @idUsuario
+      AND p.Activo = 1
+    ORDER BY p.FechaPedido DESC;
+END
+GO
+
+/* REPORTE GENERAL DE PEDIDOS */
+CREATE OR ALTER PROCEDURE USP_Reporte_Pedidos_General
+AS
+BEGIN
+    SELECT
+        ep.Descripcion AS Estado,
+        COUNT(*) AS CantidadPedidos,
+        ISNULL(SUM(p.TotalPagar), 0) AS TotalRecaudado
+    FROM Pedido p
+    JOIN EstadoPedido ep ON p.IdEstadoPedido = ep.IdEstadoPedido
+    WHERE p.Activo = 1
+    GROUP BY ep.Descripcion;
+END
 GO

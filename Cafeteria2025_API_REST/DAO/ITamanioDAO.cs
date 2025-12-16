@@ -8,6 +8,6 @@ namespace Cafeteria2025_API_REST.DAO
         Task<Tamano?> Buscar(byte id);
         Task<bool> Insertar(Tamano tam);
         Task<bool> Actualizar(byte id, Tamano tam);
-        Task<bool> Eliminar(byte id);
+        Task Desactivar(byte idTamano);
     }
 }

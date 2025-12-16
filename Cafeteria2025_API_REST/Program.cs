@@ -11,6 +11,12 @@ builder.Services.AddScoped<IProductoDAO, ProductoDAOImpl>();
 builder.Services.AddScoped<IRolDAO, RolDAOImpl>();
 builder.Services.AddScoped<ITamanioDAO, TamanioDAOImpl>();
 builder.Services.AddScoped<IUsuarioDAO, UsuarioDAOImpl>();
+builder.Services.AddScoped<IPedidoDAO, PedidoDAOImpl>();
+builder.Services.AddScoped<IOpcionGrupoDAO, OpcionGrupoDAOImpl>();
+builder.Services.AddScoped<IOpcionDAO, OpcionDAOImpl>();
+builder.Services.AddScoped<IProductoOpcionDAO, ProductoOpcionDAOImpl>();
+
+
 
 // Add configurations to the container
 MapsterConfig.RegisterMappings();

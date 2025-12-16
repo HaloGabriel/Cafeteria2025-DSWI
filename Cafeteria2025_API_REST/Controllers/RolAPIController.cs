@@ -14,8 +14,10 @@ namespace Cafeteria2025_API_REST.Controllers
             this._daoRepo = repo;
         }
 
-        [HttpGet("Listar Roles")]
-        public async Task<IActionResult> Listar()
+        // ===============================
+        // LISTAR ROLES
+        // ===============================
+        [HttpGet("Listar Roles")] public async Task<IActionResult> Listar()
         {
             var lista = await _daoRepo.Listar();
             return Ok(lista);
