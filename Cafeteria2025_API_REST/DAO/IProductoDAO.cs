@@ -4,10 +4,12 @@ namespace Cafeteria2025_API_REST.DAO
 {
     public interface IProductoDAO
     {
-        Task<IEnumerable<Producto>> Listar();
-        Task<Producto> BuscarPorId(int id);
-        Task<Producto> BuscarPorId2(int id);
-        void Insertar(Producto reg);
-        void Actualizar(Producto reg);
+        Task<IEnumerable<ProductoList>> Listar();
+        Task<ProductoDetalle?> BuscarPorId(int id);
+        Task<ProductoUpdate?> BuscarPorId2(int id);
+        Task Insertar(ProductoCreate reg);
+        Task Actualizar(ProductoUpdate reg);
+        Task Desactivar(int idProducto, string? userUpdate);
+        IEnumerable<object> ListarOpcionesPorProducto(int idProducto);
     }
 }

@@ -4,11 +4,7 @@ using System.Data;
 
 namespace Cafeteria2025_API_REST.DAO.Impl
 {
-    /// <summary>
-    /// 
-    /// RECORDAR HACER LOS PROCEDURES
-    /// 
-    /// </summary>
+
     public class RolDAOImpl : IRolDAO
     {
         private readonly IConfiguration config;
@@ -21,7 +17,9 @@ namespace Cafeteria2025_API_REST.DAO.Impl
             List<Rol> lista = new();
 
             using SqlConnection cn = new(config["ConnectionStrings:CafeteriaSQL"]);
-            using SqlCommand cmd = new("SELECT IdRol, Nombre, Descripcion, Activo FROM Rol WHERE Activo = 1", cn);
+            using SqlCommand cmd = new("USP_Listar_Roles", cn);
+
+            cmd.CommandType = CommandType.StoredProcedure;
 
             await cn.OpenAsync();
             using var dr = await cmd.ExecuteReaderAsync();
@@ -39,5 +37,6 @@ namespace Cafeteria2025_API_REST.DAO.Impl
 
             return lista;
         }
+
     }
 }

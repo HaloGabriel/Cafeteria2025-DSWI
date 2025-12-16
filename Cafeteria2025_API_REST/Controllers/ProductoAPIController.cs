@@ -13,31 +13,82 @@ namespace Cafeteria2025_API_REST.Controllers
         {
             this.productoDAO = productoDAO;
         }
-        [HttpGet("Lista")] public async Task<ActionResult> Lista()
+
+        // ===============================
+        // LISTAR PRODUCTOS (LIGERO)
+        // ===============================
+        [HttpGet] public async Task<ActionResult<IEnumerable<ProductoList>>> Listar()
         {
             var lista = await productoDAO.Listar();
             return Ok(lista);
         }
-        [HttpGet("Busqueda/{id}")] public async Task<ActionResult> Busqueda(int id = 0)
+
+        // ===============================
+        // VER DETALLE DE PRODUCTO
+        // ===============================
+        [HttpGet("{id:int}")] public async Task<ActionResult<ProductoDetalle>> Detalle(int id)
         {
             var producto = await productoDAO.BuscarPorId(id);
+
+            if (producto == null)
+                return NotFound("Producto no encontrado");
+
             return Ok(producto);
         }
-        [HttpGet("Busqueda2/{id}")]
-        public async Task<ActionResult> Busqueda2(int id = 0)
+
+        // ===============================
+        // OBTENER PRODUCTO PARA EDITAR
+        // ===============================
+        [HttpGet("editar/{id:int}")] public async Task<ActionResult<ProductoUpdate>> ObtenerParaEditar(int id)
         {
             var producto = await productoDAO.BuscarPorId2(id);
+
+            if (producto == null)
+                return NotFound("Producto no encontrado");
+
             return Ok(producto);
         }
-        [HttpPost] public async Task<ActionResult> Insertar(Producto reg)
+
+        // ===============================
+        // CREAR PRODUCTO
+        // ===============================
+        [HttpPost] public async Task<ActionResult> Crear([FromBody] ProductoCreate reg)
         {
-            await Task.Run(() => productoDAO.Insertar(reg));
-            return Ok("¡Producto registrado!");
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            await productoDAO.Insertar(reg);
+            return Ok("¡Producto registrado correctamente!");
         }
-        [HttpPut] public async Task<ActionResult> Actualizar(Producto reg)
+
+        // ===============================
+        // ACTUALIZAR PRODUCTO
+        // ===============================
+        [HttpPut] public async Task<ActionResult> Actualizar([FromBody] ProductoUpdate reg)
         {
-            await Task.Run(() => productoDAO.Actualizar(reg));
-            return Ok("¡Producto actualizado!");
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            await productoDAO.Actualizar(reg);
+            return Ok("¡Producto actualizado correctamente!");
         }
+
+        // ===============================
+        // DESACTIVAR PRODUCTO (BAJA LÓGICA)
+        // ===============================
+        [HttpDelete("{id:int}")] public async Task<ActionResult> Desactivar(int id, [FromQuery] string? userUpdate)
+        {
+            await productoDAO.Desactivar(id, userUpdate);
+            return Ok("¡Producto desactivado correctamente!");
+        }
+
+        // ===============================
+        // VER OPCIONES POR PRODUCTO
+        // ===============================
+        [HttpGet("{idProducto}/opciones")]public IActionResult Opciones(int idProducto)
+        {
+            return Ok(productoDAO.ListarOpcionesPorProducto(idProducto));
+        }
+
     }
 }

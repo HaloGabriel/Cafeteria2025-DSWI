@@ -15,29 +15,42 @@ namespace Cafeteria2025_API_REST.Controllers
             _tamDAO = repo;
         }
 
-        [HttpGet("Listar Tamaños")]
-        public async Task<IActionResult> Listar()
+        // ===============================
+        // LISTAR TAMAÑOS
+        // ===============================
+        [HttpGet("Listar Tamaños")] public async Task<IActionResult> Listar()
 => Ok(await _tamDAO.Listar());
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> Buscar(byte id)
+        // ===============================
+        // BUSCAR POR ID
+        // ===============================
+        [HttpGet("{id}")] public async Task<IActionResult> Buscar(byte id)
         {
             var t = await _tamDAO.Buscar(id);
             return t is null ? NotFound() : Ok(t);
         }
 
-        [HttpPost("Insertar tamaño")]
-        public async Task<IActionResult> Insertar([FromBody] Tamano tam)
+        // ===============================
+        // INSERTAR TAMAÑOS
+        // ===============================
+        [HttpPost("Insertar tamaño")] public async Task<IActionResult> Insertar([FromBody] Tamano tam)
             => Ok(await _tamDAO.Insertar(tam));
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Actualizar(byte id, [FromBody] Tamano tam)
+        // ===============================
+        // ACTUALIZAR POR ID
+        // ===============================
+        [HttpPut("{id}")] public async Task<IActionResult> Actualizar(byte id, [FromBody] Tamano tam)
             => Ok(await _tamDAO.Actualizar(id, tam));
 
+        // ===============================
+        // DESACTIVAR POR ID
+        // ===============================
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Eliminar(byte id)
-            => Ok(await _tamDAO.Eliminar(id));
-
+        public async Task<IActionResult> Desactivar(byte id)
+        {
+            await _tamDAO.Desactivar(id);
+            return Ok("Tamaño desactivado");
+        }
 
     }
 }

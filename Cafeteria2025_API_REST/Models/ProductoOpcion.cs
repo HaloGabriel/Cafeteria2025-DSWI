@@ -2,8 +2,7 @@
 {
     public class ProductoOpcion
     {
-        public int IdProductoOp { get; set; }
-        public Producto? ProductoOp { get; set; }
-        public Opcion? OpcionProd { get; set; }
+        public int IdProducto { get; set; }
+        public int IdOpcion { get; set; }
     }
 }
