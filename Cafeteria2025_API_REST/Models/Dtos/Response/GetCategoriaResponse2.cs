@@ -1,4 +1,4 @@
-﻿namespace Cafeteria2025_API_REST.Models.Dtos
+﻿namespace Cafeteria2025_API_REST.Models.Dtos.Response
 {
     public class GetCategoriaResponse2
     {

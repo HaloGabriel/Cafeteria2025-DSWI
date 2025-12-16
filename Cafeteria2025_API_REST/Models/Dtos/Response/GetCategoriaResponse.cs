@@ -1,7 +1,6 @@
-﻿
-namespace Cafeteria2025_API_REST.Models.Dtos
+﻿namespace Cafeteria2025_API_REST.Models.Dtos.Response
 {
-    public class PutCategoriaRequest
+    public class GetCategoriaResponse
     {
         public int id { get; set; }
         public string name { get; set; } = string.Empty;
