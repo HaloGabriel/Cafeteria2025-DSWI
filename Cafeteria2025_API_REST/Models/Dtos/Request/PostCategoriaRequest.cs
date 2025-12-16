@@ -1,4 +1,4 @@
-﻿namespace Cafeteria2025_API_REST.Models.Dtos
+﻿namespace Cafeteria2025_API_REST.Models.Dtos.Request
 {
     public class PostCategoriaRequest
     {
