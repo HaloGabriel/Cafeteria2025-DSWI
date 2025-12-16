@@ -1,5 +1,8 @@
 ﻿using Cafeteria2025_API_REST.DAO;
 using Cafeteria2025_API_REST.Models;
+using Cafeteria2025_API_REST.Models.Dtos.Request;
+using Cafeteria2025_API_REST.Models.Dtos.Response;
+using Mapster;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Cafeteria2025_API_REST.Controllers
@@ -19,7 +22,8 @@ namespace Cafeteria2025_API_REST.Controllers
         // ===============================
         [HttpGet] public async Task<ActionResult<IEnumerable<ProductoList>>> Listar()
         {
-            var lista = await productoDAO.Listar();
+            var response = await productoDAO.Listar();
+            var lista = response.Adapt<List<GetProductoResponse>>();
             return Ok(lista);
         }
 

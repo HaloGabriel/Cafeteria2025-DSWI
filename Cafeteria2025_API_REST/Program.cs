@@ -1,5 +1,7 @@
+using Cafeteria2025_API_REST.Configs;
 using Cafeteria2025_API_REST.DAO;
 using Cafeteria2025_API_REST.DAO.Impl;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +17,9 @@ builder.Services.AddScoped<IOpcionDAO, OpcionDAOImpl>();
 builder.Services.AddScoped<IProductoOpcionDAO, ProductoOpcionDAOImpl>();
 
 
+
+// Add configurations to the container
+MapsterConfig.RegisterMappings();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
