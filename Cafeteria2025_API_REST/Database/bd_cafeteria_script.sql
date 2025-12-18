@@ -660,8 +660,18 @@ VALUES
     ('Efectivo', 1),
     ('Transferencia Bancaria', 1),
     ('PayPal', 1),
-    ('Criptomonedas', 0); -- Ejemplo de un método inactivo
+    ('Criptomonedas', 0) -- Ejemplo de un método inactivo
+GO
 
+CREATE OR ALTER PROCEDURE USP_ListarMetodosPagoActivos
+AS
+  BEGIN
+    SELECT IdMetodoPago,
+           Nombre
+    FROM MetodoPago
+    WHERE Activo = 1
+  END
+GO
 
     /* PERSONALIZACIÓN */
 
