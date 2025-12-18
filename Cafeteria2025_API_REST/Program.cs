@@ -13,6 +13,7 @@ builder.Services.AddScoped<IPedidoDAO, PedidoDAOImpl>();
 builder.Services.AddScoped<IOpcionGrupoDAO, OpcionGrupoDAOImpl>();
 builder.Services.AddScoped<IOpcionDAO, OpcionDAOImpl>();
 builder.Services.AddScoped<IProductoOpcionDAO, ProductoOpcionDAOImpl>();
+builder.Services.AddScoped<IMetodoPagoDAO, MetodoPagoDAOImpl>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
