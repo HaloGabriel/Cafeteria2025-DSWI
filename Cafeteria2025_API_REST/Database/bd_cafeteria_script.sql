@@ -666,7 +666,7 @@ GO
 CREATE OR ALTER PROCEDURE USP_ListarMetodosPagoActivos
 AS
   BEGIN
-    SELECT IdMetodoPago,
+    SELECT CAST(IdMetodoPago AS INT),
            Nombre
     FROM MetodoPago
     WHERE Activo = 1
