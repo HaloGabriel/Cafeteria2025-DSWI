@@ -243,7 +243,7 @@ GO
 --Mostrar en el listado los 5 datos más importantes de los productos (mientas estén activos)
 CREATE OR ALTER PROCEDURE USP_Listar_Productos
 AS
-BEGIN
+  BEGIN
     SELECT prod.IdProducto,
            prod.Nombre,
            cate.Descripcion,
@@ -252,6 +252,28 @@ BEGIN
     FROM Producto prod
     JOIN Categoria cate ON prod.IdCategoria = cate.IdCategoria
     WHERE prod.Activo = 1;
+  END
+GO
+
+CREATE OR ALTER PROCEDURE USP_PaginacionProductos
+@pagina Int, @tamanoPagina Int
+AS
+BEGIN
+    SELECT Count(*)
+    From Producto
+    WHERE Activo = 1;
+
+    SELECT prod.IdProducto,
+           prod.Nombre,
+           cate.Descripcion,
+           prod.PrecioBase,
+           prod.Stock
+    FROM Producto prod
+    JOIN Categoria cate ON prod.IdCategoria = cate.IdCategoria
+    WHERE prod.Activo = 1
+    ORDER BY prod.IdProducto
+    OFFSET ((@pagina - 1) * @tamanoPagina) ROWS
+    FETCH NEXT @tamanoPagina ROWS ONLY;
 END
 GO
 

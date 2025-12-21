@@ -23,6 +23,15 @@ namespace Cafeteria2025_API_REST.Controllers
             return Ok(lista);
         }
 
+        // =========================================
+        // LISTAR PRODUCTOS (LIGERO) (PAGINACIÓN)
+        // =========================================
+        [HttpGet("paginacion")] public async Task<ActionResult<PaginacionRespuestaDto<Producto>>> Paginacion([FromQuery] int p = 1, [FromQuery] int t = 20)
+        {
+            var response = await productoDAO.Paginacion(p, t);
+            return Ok(response);
+        }
+
         // ===============================
         // VER DETALLE DE PRODUCTO
         // ===============================
