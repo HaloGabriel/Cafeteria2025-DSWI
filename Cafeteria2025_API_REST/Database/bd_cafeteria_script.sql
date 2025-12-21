@@ -206,7 +206,7 @@ AS
 
     SELECT *
     FROM Categoria
-    ORDER BY IdCategoria
+    ORDER BY IdCategoria ASC
     OFFSET ((@pagina - 1) * @tamanoPagina) ROWS
     FETCH NEXT @tamanoPagina ROWS ONLY;
   END
@@ -287,7 +287,7 @@ BEGIN
     FROM Producto prod
     JOIN Categoria cate ON prod.IdCategoria = cate.IdCategoria
     WHERE prod.Activo = 1
-    ORDER BY prod.IdProducto
+    ORDER BY prod.IdProducto ASC
     OFFSET ((@pagina - 1) * @tamanoPagina) ROWS
     FETCH NEXT @tamanoPagina ROWS ONLY;
 END
@@ -1023,6 +1023,35 @@ BEGIN
 END
 GO
 
+/* PAGINACIÓN USUARIO */
+CREATE OR ALTER PROCEDURE USP_Paginacion_Usuarios
+@pagina INT, @tamanoPagina INT
+AS
+BEGIN
+    SELECT COUNT(*)
+    FROM Usuario
+    WHERE Activo = 1;
+
+    SELECT
+        IdUsuario,
+        Nombre,
+        Apellido,
+        Email,
+        PasswordHash,
+        Telefono,
+        IdRol,                 
+        Activo,
+        FechaRegistro,
+        FechaActualizacion,
+        UsuarioActualizacion
+    FROM Usuario
+    WHERE Activo = 1
+    ORDER BY IdUsuario ASC
+    OFFSET ((@pagina - 1) * @tamanoPagina) ROWS
+    FETCH NEXT @tamanoPagina ROWS ONLY;
+END
+GO
+
 
 
 /* BUSCAR POR ID */
@@ -1142,7 +1171,6 @@ CREATE OR ALTER PROCEDURE USP_Listar_Historial_Pedidos_Usuario
 @idUsuario INT
 AS
 BEGIN
-
     SELECT
         p.IdPedido,
         p.FechaPedido,
