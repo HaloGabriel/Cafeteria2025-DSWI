@@ -1126,6 +1126,7 @@ CREATE OR ALTER PROCEDURE USP_Listar_Historial_Pedidos_Usuario
 @idUsuario INT
 AS
 BEGIN
+
     SELECT
         p.IdPedido,
         p.FechaPedido,
@@ -1138,6 +1139,33 @@ BEGIN
     WHERE p.IdUsuario = @idUsuario
       AND p.Activo = 1
     ORDER BY p.FechaPedido DESC;
+END
+GO
+
+/* PAGINACIÓN DE HISTORIAL POR USUARIO */
+CREATE OR ALTER PROCEDURE USP_Paginacion_Historial_Pedidos_Usuario
+@idUsuario INT, @pagina INT, @tamanoPagina INT
+AS
+BEGIN
+    SELECT COUNT(*)
+    FROM Pedido
+    WHERE IdUsuario = @idUsuario
+      AND Activo = 1;
+
+    SELECT
+        p.IdPedido,
+        p.FechaPedido,
+        ep.Descripcion AS Estado,
+        p.TotalPagar,
+        p.NombreClienteRecoge,
+        p.CodigoRecojo
+    FROM Pedido p
+    JOIN EstadoPedido ep ON p.IdEstadoPedido = ep.IdEstadoPedido
+    WHERE p.IdUsuario = @idUsuario
+      AND p.Activo = 1
+    ORDER BY p.FechaPedido DESC
+    OFFSET ((@pagina - 1) * @tamanoPagina) ROWS
+    FETCH NEXT @tamanoPagina ROWS ONLY;
 END
 GO
 

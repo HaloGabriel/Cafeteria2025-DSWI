@@ -129,6 +129,15 @@ namespace Cafeteria2025_API_REST.Controllers
             return Ok(_dao.ListarHistorialPedidosUsuario(idUsuario));
         }
 
+        // ===================================
+        // PAGINACIÓN HISTORIAL POR CLIENTE
+        // ===================================
+        [HttpGet("historial/paginacion/{idUsuario}")]
+        public IActionResult Paginacionistorial(int idUsuario, [FromQuery] int p = 1, [FromQuery] int t = 10)
+        {
+            return Ok(_dao.PaginacionHistorialPedidosUsuario(idUsuario, p, t));
+        }
+
         // ===============================
         // REPORTES
         // ===============================
