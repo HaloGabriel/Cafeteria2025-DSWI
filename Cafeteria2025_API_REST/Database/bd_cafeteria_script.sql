@@ -260,7 +260,8 @@ CREATE OR ALTER PROCEDURE USP_PaginacionProductos
 AS
 BEGIN
     SELECT Count(*)
-    From Producto prod;
+    From Producto
+    WHERE Activo = 1;
 
     SELECT prod.IdProducto,
            prod.Nombre,

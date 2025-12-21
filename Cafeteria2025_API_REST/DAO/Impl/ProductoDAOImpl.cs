@@ -190,7 +190,7 @@ namespace Cafeteria2025_API_REST.DAO.Impl
             using var cmd = new SqlCommand("USP_PaginacionProductos", cn);
             cmd.CommandType = CommandType.StoredProcedure;
             cmd.Parameters.AddWithValue("@pagina", pagina);
-            cmd.Parameters.AddWithValue("@nroRegistros", tamanoPagina);
+            cmd.Parameters.AddWithValue("@tamanoPagina", tamanoPagina);
             await cn.OpenAsync();
             using var dr = await cmd.ExecuteReaderAsync();
             if(await dr.ReadAsync())
