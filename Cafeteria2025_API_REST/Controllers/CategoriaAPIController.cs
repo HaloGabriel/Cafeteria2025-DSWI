@@ -24,6 +24,16 @@ namespace Cafeteria2025_API_REST.Controllers
         }
 
         // ===============================
+        // PAGINACIÓN CATEGORIAS
+        // ===============================
+        [HttpGet("Lista/Paginacion")]
+        public async Task<ActionResult<List<Categoria>>> Paginacion(int p = 1, int t = 10)
+        {
+            var lista = await categoriaDAO.Paginacion(p, t);
+            return Ok(lista);
+        }
+
+        // ===============================
         // LISTAR CATEGORIAS POR DESCRIPCION
         // ===============================
         [HttpGet("Lista/Sort/Descripcion")] public async Task<ActionResult<CategoriaSelectList>> ListaDescripcionAsc()

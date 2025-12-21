@@ -196,6 +196,22 @@ AS
   END
 GO
 
+--Paginación de categorías para el CRUD
+CREATE OR ALTER PROCEDURE USP_Paginacion_Categorias
+@pagina Int, @tamanoPagina Int
+AS
+  BEGIN
+    SELECT COUNT(*)
+    FROM Categoria;
+
+    SELECT *
+    FROM Categoria
+    ORDER BY IdCategoria
+    OFFSET ((@pagina - 1) * @tamanoPagina) ROWS
+    FETCH NEXT @tamanoPagina ROWS ONLY;
+  END
+GO
+
 --Listado de categorías para desplegables
 CREATE OR ALTER PROCEDURE USP_Listar_Categorias_Descripcion_Asc
 AS
