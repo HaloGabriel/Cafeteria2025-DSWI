@@ -183,6 +183,39 @@ namespace Cafeteria2025_API_REST.DAO.Impl
             return lista;
         }
 
-
+        public async Task<PaginacionRespuestaDto<ProductoList>> Paginacion(int pagina, int tamanoPagina)
+        {
+            PaginacionRespuestaDto<ProductoList> response = new();
+            using var cn = new SqlConnection(config["ConnectionStrings:CafeteriaSQL"]);
+            using var cmd = new SqlCommand("USP_PaginacionProductos", cn);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@pagina", pagina);
+            cmd.Parameters.AddWithValue("@nroRegistros", tamanoPagina);
+            await cn.OpenAsync();
+            using var dr = await cmd.ExecuteReaderAsync();
+            if(await dr.ReadAsync())
+            {
+                int totalRegistros = dr.GetInt32(0);
+                response.TotalRegistros = totalRegistros;
+                response.TotalPaginas = totalRegistros % tamanoPagina == 0 ?
+                                        totalRegistros / tamanoPagina :
+                                        totalRegistros / tamanoPagina + 1;
+                response.PaginaActual = pagina;
+                response.TamanoPagina = tamanoPagina;
+            }
+            await dr.NextResultAsync();
+            while(await dr.ReadAsync())
+            {
+                response.Datos.Add(new ProductoList()
+                {
+                    IdProducto = dr.GetInt32(0),
+                    Nombre = dr.GetString(1),
+                    Categoria = dr.GetString(2),
+                    PrecioBase = dr.GetDecimal(3),
+                    Stock = dr.GetInt32(4)
+                });
+            }
+            return response;
+        }
     }
 }
