@@ -196,6 +196,22 @@ AS
   END
 GO
 
+--Paginación de categorías para el CRUD
+CREATE OR ALTER PROCEDURE USP_Paginacion_Categorias
+@pagina Int, @tamanoPagina Int
+AS
+  BEGIN
+    SELECT COUNT(*)
+    FROM Categoria;
+
+    SELECT *
+    FROM Categoria
+    ORDER BY IdCategoria ASC
+    OFFSET ((@pagina - 1) * @tamanoPagina) ROWS
+    FETCH NEXT @tamanoPagina ROWS ONLY;
+  END
+GO
+
 --Listado de categorías para desplegables
 CREATE OR ALTER PROCEDURE USP_Listar_Categorias_Descripcion_Asc
 AS
@@ -271,7 +287,7 @@ BEGIN
     FROM Producto prod
     JOIN Categoria cate ON prod.IdCategoria = cate.IdCategoria
     WHERE prod.Activo = 1
-    ORDER BY prod.IdProducto
+    ORDER BY prod.IdProducto ASC
     OFFSET ((@pagina - 1) * @tamanoPagina) ROWS
     FETCH NEXT @tamanoPagina ROWS ONLY;
 END
@@ -672,6 +688,33 @@ BEGIN
 END
 GO
 
+/* PAGINACIÓN PEDIDOS OPERATIVOS */
+CREATE OR ALTER PROCEDURE USP_PaginacionPedidosOperativos
+@pagina Int, @tamanoPagina Int
+AS
+  BEGIN
+    SELECT COUNT(*)
+    FROM Pedido p
+    WHERE IdEstadoPedido IN (2, 3)
+      AND Activo = 1;
+
+    SELECT p.IdPedido,
+           u.Nombre + ' ' + u.Apellido AS Cliente,
+           p.FechaPedido,
+           ep.Descripcion AS Estado,
+           p.TotalPagar,
+           p.CodigoRecojo
+    FROM Pedido p
+    JOIN Usuario u ON p.IdUsuario = u.IdUsuario
+    JOIN EstadoPedido ep ON p.IdEstadoPedido = ep.IdEstadoPedido
+    WHERE p.IdEstadoPedido IN (2, 3)
+      AND p.Activo = 1
+    ORDER BY p.FechaPedido ASC
+    OFFSET ((@pagina - 1) * @tamanoPagina) ROWS
+    FETCH NEXT @tamanoPagina ROWS ONLY;
+  END
+GO
+
 
 
 
@@ -980,6 +1023,35 @@ BEGIN
 END
 GO
 
+/* PAGINACIÓN USUARIO */
+CREATE OR ALTER PROCEDURE USP_Paginacion_Usuarios
+@pagina INT, @tamanoPagina INT
+AS
+BEGIN
+    SELECT COUNT(*)
+    FROM Usuario
+    WHERE Activo = 1;
+
+    SELECT
+        IdUsuario,
+        Nombre,
+        Apellido,
+        Email,
+        PasswordHash,
+        Telefono,
+        IdRol,                 
+        Activo,
+        FechaRegistro,
+        FechaActualizacion,
+        UsuarioActualizacion
+    FROM Usuario
+    WHERE Activo = 1
+    ORDER BY IdUsuario ASC
+    OFFSET ((@pagina - 1) * @tamanoPagina) ROWS
+    FETCH NEXT @tamanoPagina ROWS ONLY;
+END
+GO
+
 
 
 /* BUSCAR POR ID */
@@ -1111,6 +1183,33 @@ BEGIN
     WHERE p.IdUsuario = @idUsuario
       AND p.Activo = 1
     ORDER BY p.FechaPedido DESC;
+END
+GO
+
+/* PAGINACIÓN DE HISTORIAL POR USUARIO */
+CREATE OR ALTER PROCEDURE USP_Paginacion_Historial_Pedidos_Usuario
+@idUsuario INT, @pagina INT, @tamanoPagina INT
+AS
+BEGIN
+    SELECT COUNT(*)
+    FROM Pedido
+    WHERE IdUsuario = @idUsuario
+      AND Activo = 1;
+
+    SELECT
+        p.IdPedido,
+        p.FechaPedido,
+        ep.Descripcion AS Estado,
+        p.TotalPagar,
+        p.NombreClienteRecoge,
+        p.CodigoRecojo
+    FROM Pedido p
+    JOIN EstadoPedido ep ON p.IdEstadoPedido = ep.IdEstadoPedido
+    WHERE p.IdUsuario = @idUsuario
+      AND p.Activo = 1
+    ORDER BY p.FechaPedido DESC
+    OFFSET ((@pagina - 1) * @tamanoPagina) ROWS
+    FETCH NEXT @tamanoPagina ROWS ONLY;
 END
 GO
 

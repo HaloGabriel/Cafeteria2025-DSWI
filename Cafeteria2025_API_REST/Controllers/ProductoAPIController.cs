@@ -26,7 +26,7 @@ namespace Cafeteria2025_API_REST.Controllers
         // =========================================
         // LISTAR PRODUCTOS (LIGERO) (PAGINACIÓN)
         // =========================================
-        [HttpGet("paginacion")] public async Task<ActionResult<PaginacionRespuestaDto<Producto>>> Paginacion([FromQuery] int p = 1, [FromQuery] int t = 20)
+        [HttpGet("paginacion")] public async Task<ActionResult<PaginacionRespuestaDto<Producto>>> Paginacion([FromQuery] int p = 1, [FromQuery] int t = 10)
         {
             var response = await productoDAO.Paginacion(p, t);
             return Ok(response);

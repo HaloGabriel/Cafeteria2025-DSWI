@@ -24,6 +24,13 @@ namespace Cafeteria2025_API_REST.Controllers
         => Ok(await _usudao.Listar());
 
         // ===============================
+        // PAGINACIÓN USUARIOS
+        // ===============================
+        [HttpGet("Paginacion")]
+        public async Task<IActionResult> Paginacion(int p = 1, int t = 10)
+        => Ok(await _usudao.Paginacion(p, t));
+
+        // ===============================
         // BUSCAR POR ID
         // ===============================
         [HttpGet("{id}")]

@@ -1,4 +1,5 @@
-﻿using Cafeteria2025_API_REST.Models;
+﻿using Azure;
+using Cafeteria2025_API_REST.Models;
 using Microsoft.Data.SqlClient;
 using System.Data;
 
@@ -89,6 +90,41 @@ namespace Cafeteria2025_API_REST.DAO.Impl
                 });
             }
             return temporal;
+        }
+
+        public async Task<PaginacionRespuestaDto<Categoria>> Paginacion(int pagina, int tamanoPagina)
+        {
+            PaginacionRespuestaDto<Categoria> response = new();
+            using var cn = new SqlConnection(config["ConnectionStrings:CafeteriaSQL"]);
+            using var cmd = new SqlCommand("USP_Paginacion_Categorias", cn);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@pagina", pagina);
+            cmd.Parameters.AddWithValue("@tamanoPagina", tamanoPagina);
+            await cn.OpenAsync();
+            using var dr = await cmd.ExecuteReaderAsync();
+            if(await dr.ReadAsync())
+            {
+                int totalRegistros = dr.GetInt32(0);
+                response.TotalRegistros = totalRegistros;
+                response.TotalPaginas = totalRegistros % tamanoPagina == 0 ?
+                                        totalRegistros / tamanoPagina :
+                                        totalRegistros / tamanoPagina + 1;
+                response.PaginaActual = pagina;
+                response.TamanoPagina = tamanoPagina;
+            }
+
+            await dr.NextResultAsync();
+            while (await dr.ReadAsync())
+            {
+                response.Datos.Add(new Categoria()
+                {
+                    IdCategoria = dr.GetInt32(0),
+                    Descripcion = dr.GetString(1),
+                    Activo = dr.GetBoolean(2),
+                    FechaRegistro = dr.GetDateTime(3)
+                });
+            }
+            return response;
         }
     }
 }
