@@ -672,6 +672,33 @@ BEGIN
 END
 GO
 
+/* PAGINACIÓN PEDIDOS OPERATIVOS */
+CREATE OR ALTER PROCEDURE USP_PaginacionPedidosOperativos
+@pagina Int, @tamanoPagina Int
+AS
+  BEGIN
+    SELECT COUNT(*)
+    FROM Pedido p
+    WHERE IdEstadoPedido IN (2, 3)
+      AND Activo = 1;
+
+    SELECT p.IdPedido,
+           u.Nombre + ' ' + u.Apellido AS Cliente,
+           p.FechaPedido,
+           ep.Descripcion AS Estado,
+           p.TotalPagar,
+           p.CodigoRecojo
+    FROM Pedido p
+    JOIN Usuario u ON p.IdUsuario = u.IdUsuario
+    JOIN EstadoPedido ep ON p.IdEstadoPedido = ep.IdEstadoPedido
+    WHERE p.IdEstadoPedido IN (2, 3)
+      AND p.Activo = 1
+    ORDER BY p.FechaPedido ASC
+    OFFSET ((@pagina - 1) * @tamanoPagina) ROWS
+    FETCH NEXT @tamanoPagina ROWS ONLY;
+  END
+GO
+
 
 
 

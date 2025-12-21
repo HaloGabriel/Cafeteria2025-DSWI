@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using Cafeteria2025_API_REST.Models;
+using Microsoft.Data.SqlClient;
 using System.Data;
 
 namespace Cafeteria2025_API_REST.DAO.Impl
@@ -211,5 +212,44 @@ namespace Cafeteria2025_API_REST.DAO.Impl
             return lista;
         }
 
+        public PaginacionRespuestaDto<object> PaginacionPedidosOperativos(int pagina, int tamanoPagina)
+        {
+            PaginacionRespuestaDto<object> response = new();
+
+            using SqlConnection cn = new SqlConnection(config["ConnectionStrings:CafeteriaSQL"]);
+            cn.Open();
+
+            SqlCommand cmd = new SqlCommand("USP_PaginacionPedidosOperativos", cn);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@pagina", pagina);
+            cmd.Parameters.AddWithValue("@tamanoPagina", tamanoPagina);
+
+            SqlDataReader dr = cmd.ExecuteReader();
+            if(dr.Read())
+            {
+                int totalRegistros = dr.GetInt32(0);
+                response.TotalRegistros = totalRegistros;
+                response.TotalPaginas = totalRegistros % tamanoPagina == 0 ?
+                                        totalRegistros / tamanoPagina :
+                                        totalRegistros / tamanoPagina + 1;
+                response.PaginaActual = pagina;
+                response.TamanoPagina = tamanoPagina;
+            }
+
+            dr.NextResult();
+            while (dr.Read())
+            {
+                response.Datos.Add(new
+                {
+                    IdPedido = dr.GetInt32(0),
+                    Cliente = dr.GetString(1),
+                    Fecha = dr.GetDateTime(2),
+                    Estado = dr.GetString(3),
+                    Total = dr.GetDecimal(4),
+                    CodigoRecojo = dr.GetString(5)
+                });
+            }
+            return response;
+        }
     }
 }

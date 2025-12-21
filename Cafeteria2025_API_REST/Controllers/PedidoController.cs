@@ -91,6 +91,14 @@ namespace Cafeteria2025_API_REST.Controllers
             return Ok(_dao.ListarPedidosOperativos());
         }
 
+        // ================================
+        // PAGINACIÓN PEDIDOS OPERATIVOS
+        // ================================
+        [HttpGet("operativos/paginacion")] public IActionResult PaginacionPedidosOperativos([FromQuery] int p = 1, [FromQuery] int t = 10)
+        {
+            return Ok(_dao.PaginacionPedidosOperativos(p, t));
+        }
+
         // ===============================
         // AGREGAR PERSONALIZACIÓN AL PRODUCTO DEL PEDIDO
         // ===============================
