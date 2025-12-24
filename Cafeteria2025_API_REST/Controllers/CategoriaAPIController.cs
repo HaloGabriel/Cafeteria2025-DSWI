@@ -1,13 +1,16 @@
 ﻿using Cafeteria2025_API_REST.DAO;
 using Cafeteria2025_API_REST.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Cafeteria2025_API_REST.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/Categoria")]
+    [Authorize]
     public class CategoriaAPIController : ControllerBase
     {
+
         private ICategoriaDAO categoriaDAO;
         public CategoriaAPIController(ICategoriaDAO categoriaDAO)
         {
@@ -17,7 +20,9 @@ namespace Cafeteria2025_API_REST.Controllers
         // ===============================
         // LISTAR CATEGORIAS
         // ===============================
-        [HttpGet("Lista")] public async Task<ActionResult<List<Categoria>>> Lista()
+        [Authorize(Roles = "admin,cliente")]
+        [HttpGet("Lista")]
+        public async Task<ActionResult<List<Categoria>>> Lista()
         {
             var lista = await categoriaDAO.Listar();
             return Ok(lista);
@@ -26,6 +31,7 @@ namespace Cafeteria2025_API_REST.Controllers
         // ===============================
         // PAGINACIÓN CATEGORIAS
         // ===============================
+        [Authorize(Roles = "admin,cliente")]
         [HttpGet("Lista/Paginacion")]
         public async Task<ActionResult<List<Categoria>>> Paginacion(int p = 1, int t = 10)
         {
@@ -36,7 +42,9 @@ namespace Cafeteria2025_API_REST.Controllers
         // ===============================
         // LISTAR CATEGORIAS POR DESCRIPCION
         // ===============================
-        [HttpGet("Lista/Sort/Descripcion")] public async Task<ActionResult<CategoriaSelectList>> ListaDescripcionAsc()
+        [Authorize(Roles = "admin,cliente")]
+        [HttpGet("Lista/Sort/Descripcion")]
+        public async Task<ActionResult<CategoriaSelectList>> ListaDescripcionAsc()
         {
             var lista = await categoriaDAO.ListarDescripcionAsc();
             return Ok(lista);
@@ -45,7 +53,9 @@ namespace Cafeteria2025_API_REST.Controllers
         // ===============================
         // BUSCAR POR ID
         // ===============================
-        [HttpGet("{id}")] public async Task<ActionResult<Categoria>> BuscarPorId(int id = 0)
+        [Authorize(Roles = "admin,cliente")]
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Categoria>> BuscarPorId(int id = 0)
         {
             var categoria = await categoriaDAO.Buscar(id);
 
@@ -58,7 +68,9 @@ namespace Cafeteria2025_API_REST.Controllers
         // ===============================
         // REGISTRAR CATEGORIA
         // ===============================
-        [HttpPost] public async Task<ActionResult> Registrar(CategoriaCreate reg)
+        [Authorize(Roles = "admin")]
+        [HttpPost]
+        public async Task<ActionResult> Registrar(CategoriaCreate reg)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -70,7 +82,9 @@ namespace Cafeteria2025_API_REST.Controllers
         // ===============================
         // ACTUALIZAR CATEGORIA
         // ===============================
-        [HttpPut] public async Task<ActionResult> Actualizar(CategoriaUpdate reg)
+        [Authorize(Roles = "admin")]
+        [HttpPut]
+        public async Task<ActionResult> Actualizar(CategoriaUpdate reg)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);

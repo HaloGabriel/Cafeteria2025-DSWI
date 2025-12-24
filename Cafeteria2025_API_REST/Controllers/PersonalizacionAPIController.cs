@@ -1,11 +1,14 @@
 ﻿using Cafeteria2025_API_REST.DAO;
 using Cafeteria2025_API_REST.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Cafeteria2025_API_REST.Controllers
 {
     [ApiController]
     [Route("api/admin/personalizacion")]
+    [Authorize]
+
     public class PersonalizacionAPIController : ControllerBase
     {
         private readonly IOpcionGrupoDAO _grupoDAO;
@@ -24,6 +27,7 @@ namespace Cafeteria2025_API_REST.Controllers
         ======================= */
 
         [HttpPost("grupo")]
+        [Authorize(Roles = "admin")]
         public IActionResult CrearGrupo([FromBody] OpcionGrupo grupo)
         {
             _grupoDAO.Insertar(grupo);
@@ -31,6 +35,7 @@ namespace Cafeteria2025_API_REST.Controllers
         }
 
         [HttpGet("grupo")]
+        [Authorize(Roles = "admin,cliente")]
         public IActionResult ListarGrupos()
         {
             return Ok(_grupoDAO.Listar());
@@ -41,6 +46,7 @@ namespace Cafeteria2025_API_REST.Controllers
         ======================= */
 
         [HttpPost("opcion")]
+        [Authorize(Roles = "admin")]
         public IActionResult CrearOpcion([FromBody] Opcion opcion)
         {
             _opcionDAO.Insertar(opcion);
@@ -48,6 +54,7 @@ namespace Cafeteria2025_API_REST.Controllers
         }
 
         [HttpGet("opcion/{idGrupo}")]
+        [Authorize(Roles = "admin,cliente")]
         public IActionResult ListarOpcionesPorGrupo(int idGrupo)
         {
             return Ok(_opcionDAO.ListarPorGrupo(idGrupo));
@@ -58,6 +65,7 @@ namespace Cafeteria2025_API_REST.Controllers
         ======================= */
 
         [HttpPost("producto-opcion")]
+        [Authorize(Roles = "admin")]
         public IActionResult AsignarOpcionProducto(
             int idProducto, int idOpcion)
         {

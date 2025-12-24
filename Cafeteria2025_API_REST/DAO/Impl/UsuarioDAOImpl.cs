@@ -192,5 +192,45 @@ namespace Cafeteria2025_API_REST.DAO.Impl
 
             return response;
         }
+
+
+        /* =========================
+            LOGIN
+        ========================= */
+
+        public async Task<UsuarioLogin?> Login(string email, string password)
+        {
+            using SqlConnection cn = new(_config["ConnectionStrings:CafeteriaSQL"]);
+            using SqlCommand cmd = new(@"
+        SELECT 
+            u.IdUsuario,
+            u.Email,
+            u.PasswordHash,
+            u.IdRol,
+            r.Nombre AS RolNombre
+        FROM Usuario u
+        JOIN Rol r ON u.IdRol = r.IdRol
+        WHERE u.Email = @email
+          AND u.Activo = 1", cn);
+
+            cmd.Parameters.AddWithValue("@email", email);
+
+            await cn.OpenAsync();
+            using var dr = await cmd.ExecuteReaderAsync();
+
+            if (!await dr.ReadAsync()) return null;
+
+            if (dr.GetString(2) != password)
+                return null;
+
+            return new UsuarioLogin
+            {
+                IdUsuario = dr.GetInt32(0),
+                Email = dr.GetString(1),
+                PasswordHash = dr.GetString(2),
+                IdRol = dr.GetByte(3),
+                RolNombre = dr.GetString(4)
+            };
+        }
     }
 }

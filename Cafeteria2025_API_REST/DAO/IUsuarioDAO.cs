@@ -10,5 +10,7 @@ namespace Cafeteria2025_API_REST.DAO
         Task<bool> Insertar(Usuario usu, string usuarioCreacion);
         Task<bool> Actualizar(int id, Usuario usu, string usuarioActualiza);
         Task Desactivar(int idUsuario);
+        Task<UsuarioLogin?> Login(string email, string password);
+
     }
 }

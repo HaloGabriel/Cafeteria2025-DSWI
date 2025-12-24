@@ -66,7 +66,7 @@ namespace Cafeteria2025_API_REST.DAO.Impl
             return lista;
         }
 
-        public void ConfirmarPedido(int idPedido, int idMetodoPago)
+        public void ConfirmarPedido(int idPedido, int idMetodoPago, int idUsuario)
         {
             using SqlConnection cn = new SqlConnection(config["ConnectionStrings:CafeteriaSQL"]);
             cn.Open();
@@ -76,6 +76,8 @@ namespace Cafeteria2025_API_REST.DAO.Impl
 
             cmd.Parameters.AddWithValue("@idPedido", idPedido);
             cmd.Parameters.AddWithValue("@idMetodoPago", idMetodoPago);
+            cmd.Parameters.AddWithValue("@idUsuario", idUsuario);
+
 
             cmd.ExecuteNonQuery();
         }

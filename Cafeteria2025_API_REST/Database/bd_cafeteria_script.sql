@@ -537,46 +537,6 @@ BEGIN
 END
 GO
 
-/* CONFIRMAR PEDIDO */
-CREATE OR ALTER PROCEDURE USP_ConfirmarPedido
-@idPedido INT,
-@idMetodoPago TINYINT
-AS
-BEGIN
-    BEGIN TRY
-        BEGIN TRAN;
-
-        /* 1. Validar stock */
-        EXEC USP_ValidarStockPedido @idPedido;
-
-        /* 2. Descontar stock */
-        EXEC USP_DescontarStockPedido @idPedido;
-
-        /* 3. Calcular TOTAL del pedido */
-        DECLARE @total DECIMAL(12,2);
-
-        SELECT @total = ISNULL(SUM(Subtotal), 0)
-        FROM DetallePedido
-        WHERE IdPedido = @idPedido;
-
-        /* 4. Actualizar pedido */
-        UPDATE Pedido
-        SET TotalPagar = @total,
-            IdEstadoPedido = 2, -- Preparando
-            IdMetodoPago = @idMetodoPago,
-            FechaActualizacion = SYSDATETIME()
-        WHERE IdPedido = @idPedido;
-
-        COMMIT;
-    END TRY
-    BEGIN CATCH
-        ROLLBACK;
-        THROW;
-    END CATCH
-END
-GO
-
-
 /* DEVOLVER STOCK DEL PEDIDO */
 CREATE OR ALTER PROCEDURE USP_DevolverStockPedido
 @idPedido INT
@@ -1225,5 +1185,55 @@ BEGIN
     JOIN EstadoPedido ep ON p.IdEstadoPedido = ep.IdEstadoPedido
     WHERE p.Activo = 1
     GROUP BY ep.Descripcion;
+END
+GO
+/* Modificado 23/12 */
+/* CONFIRMAR PEDIDO */
+CREATE OR ALTER PROCEDURE USP_ConfirmarPedido
+@idPedido INT,
+@idMetodoPago TINYINT,
+@idUsuario INT
+AS
+BEGIN
+    BEGIN TRY
+        BEGIN TRAN;
+
+        -- Validar que el pedido sea del usuario
+        IF NOT EXISTS (
+            SELECT 1
+            FROM Pedido
+            WHERE IdPedido = @idPedido
+              AND IdUsuario = @idUsuario
+              AND IdEstadoPedido = 1
+              AND Activo = 1
+        )
+        BEGIN
+            RAISERROR('Pedido no válido o no pertenece al usuario', 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
+
+        EXEC USP_ValidarStockPedido @idPedido;
+        EXEC USP_DescontarStockPedido @idPedido;
+
+        DECLARE @total DECIMAL(12,2);
+
+        SELECT @total = ISNULL(SUM(Subtotal), 0)
+        FROM DetallePedido
+        WHERE IdPedido = @idPedido;
+
+        UPDATE Pedido
+        SET TotalPagar = @total,
+            IdEstadoPedido = 2,
+            IdMetodoPago = @idMetodoPago,
+            FechaActualizacion = SYSDATETIME()
+        WHERE IdPedido = @idPedido;
+
+        COMMIT;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK;
+        THROW;
+    END CATCH
 END
 GO

@@ -1,11 +1,13 @@
 ﻿using Cafeteria2025_API_REST.DAO;
 using Cafeteria2025_API_REST.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Cafeteria2025_API_REST.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class ProductoAPIController : ControllerBase
     {
         private readonly IProductoDAO productoDAO;
@@ -17,7 +19,9 @@ namespace Cafeteria2025_API_REST.Controllers
         // ===============================
         // LISTAR PRODUCTOS (LIGERO)
         // ===============================
-        [HttpGet] public async Task<ActionResult<IEnumerable<ProductoList>>> Listar()
+        [HttpGet("Listado")]
+        [Authorize(Roles = "admin,cliente")]
+        public async Task<ActionResult<IEnumerable<ProductoList>>> Listar()
         {
             var lista = await productoDAO.Listar();
             return Ok(lista);
@@ -26,7 +30,9 @@ namespace Cafeteria2025_API_REST.Controllers
         // =========================================
         // LISTAR PRODUCTOS (LIGERO) (PAGINACIÓN)
         // =========================================
-        [HttpGet("paginacion")] public async Task<ActionResult<PaginacionRespuestaDto<Producto>>> Paginacion([FromQuery] int p = 1, [FromQuery] int t = 10)
+        [HttpGet("paginacion")]
+        [Authorize(Roles = "admin,cliente")]
+        public async Task<ActionResult<PaginacionRespuestaDto<Producto>>> Paginacion([FromQuery] int p = 1, [FromQuery] int t = 10)
         {
             var response = await productoDAO.Paginacion(p, t);
             return Ok(response);
@@ -35,7 +41,9 @@ namespace Cafeteria2025_API_REST.Controllers
         // ===============================
         // VER DETALLE DE PRODUCTO
         // ===============================
-        [HttpGet("{id:int}")] public async Task<ActionResult<ProductoDetalle>> Detalle(int id)
+        [HttpGet("{id:int}")]
+        [Authorize(Roles = "admin,cliente")]
+        public async Task<ActionResult<ProductoDetalle>> Detalle(int id)
         {
             var producto = await productoDAO.BuscarPorId(id);
 
@@ -48,7 +56,9 @@ namespace Cafeteria2025_API_REST.Controllers
         // ===============================
         // OBTENER PRODUCTO PARA EDITAR
         // ===============================
-        [HttpGet("editar/{id:int}")] public async Task<ActionResult<ProductoUpdate>> ObtenerParaEditar(int id)
+        [HttpGet("editar/{id:int}")]
+        [Authorize(Roles = "admin")]
+        public async Task<ActionResult<ProductoUpdate>> ObtenerParaEditar(int id)
         {
             var producto = await productoDAO.BuscarPorId2(id);
 
@@ -61,7 +71,9 @@ namespace Cafeteria2025_API_REST.Controllers
         // ===============================
         // CREAR PRODUCTO
         // ===============================
-        [HttpPost] public async Task<ActionResult> Crear([FromBody] ProductoCreate reg)
+        [HttpPost("Crear Producto")]
+        [Authorize(Roles = "admin")]
+        public async Task<ActionResult> Crear([FromBody] ProductoCreate reg)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -73,7 +85,9 @@ namespace Cafeteria2025_API_REST.Controllers
         // ===============================
         // ACTUALIZAR PRODUCTO
         // ===============================
-        [HttpPut] public async Task<ActionResult> Actualizar([FromBody] ProductoUpdate reg)
+        [HttpPut("Actualizar Producto")]
+        [Authorize(Roles = "admin")]
+        public async Task<ActionResult> Actualizar([FromBody] ProductoUpdate reg)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -85,7 +99,9 @@ namespace Cafeteria2025_API_REST.Controllers
         // ===============================
         // DESACTIVAR PRODUCTO (BAJA LÓGICA)
         // ===============================
-        [HttpDelete("{id:int}")] public async Task<ActionResult> Desactivar(int id, [FromQuery] string? userUpdate)
+        [HttpDelete("{id:int}")]
+        [Authorize(Roles = "admin")]
+        public async Task<ActionResult> Desactivar(int id, [FromQuery] string? userUpdate)
         {
             await productoDAO.Desactivar(id, userUpdate);
             return Ok("¡Producto desactivado correctamente!");
@@ -94,7 +110,9 @@ namespace Cafeteria2025_API_REST.Controllers
         // ===============================
         // VER OPCIONES POR PRODUCTO
         // ===============================
-        [HttpGet("{idProducto}/opciones")]public IActionResult Opciones(int idProducto)
+        [HttpGet("{idProducto}/opciones")]
+        [Authorize(Roles = "admin,cliente")]
+        public IActionResult Opciones(int idProducto)
         {
             return Ok(productoDAO.ListarOpcionesPorProducto(idProducto));
         }

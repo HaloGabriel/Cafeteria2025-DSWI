@@ -7,7 +7,7 @@ namespace Cafeteria2025_API_REST.DAO
         int ObtenerOCrearPedidoGenerado(int idUsuario);
         void AgregarProducto(int idPedido, int idProducto, int cantidad);
         IEnumerable<object> ListarPedidoGenerado(int idUsuario);
-        void ConfirmarPedido(int idPedido, int idMetodoPago);
+        void ConfirmarPedido(int idPedido, int idMetodoPago, int idUsuario);
         void CancelarPedido(int idPedido);
         void CambiarEstadoPedido(int idPedido, int idEstadoNuevo);
         IEnumerable<object> ListarPedidosOperativos();
