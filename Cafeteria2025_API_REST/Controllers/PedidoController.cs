@@ -92,6 +92,14 @@ namespace Cafeteria2025_API_REST.Controllers
             return Ok("Pedido cancelado");
         }
 
+        // ================================
+        // PAGINACIÓN PEDIDOS OPERATIVOS
+        // ================================
+        [HttpGet("operativos/paginacion")] public IActionResult PaginacionPedidosOperativos([FromQuery] int p = 1, [FromQuery] int t = 10)
+        {
+            return Ok(_dao.PaginacionPedidosOperativos(p, t));
+        }
+
         // ===============================
         // CAMBIAR ESTADO
         // ===============================
@@ -120,7 +128,14 @@ namespace Cafeteria2025_API_REST.Controllers
             return Ok(_dao.PaginacionPedidosOperativos(pagina, tamano));
         }
 
-
+        // ===================================
+        // PAGINACIÓN HISTORIAL POR CLIENTE
+        // ===================================
+        [HttpGet("historial/paginacion/{idUsuario}")]
+        public IActionResult Paginacionistorial(int idUsuario, [FromQuery] int p = 1, [FromQuery] int t = 10)
+        {
+            return Ok(_dao.PaginacionHistorialPedidosUsuario(idUsuario, p, t));
+        }
 
         // ===============================
         // REPORTE
