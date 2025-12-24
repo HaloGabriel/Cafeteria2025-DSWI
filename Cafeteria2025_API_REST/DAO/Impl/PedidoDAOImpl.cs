@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using Cafeteria2025_API_REST.Models;
+using Microsoft.Data.SqlClient;
 using System.Data;
 
 namespace Cafeteria2025_API_REST.DAO.Impl
@@ -65,7 +66,7 @@ namespace Cafeteria2025_API_REST.DAO.Impl
             return lista;
         }
 
-        public void ConfirmarPedido(int idPedido, int idMetodoPago)
+        public void ConfirmarPedido(int idPedido, int idMetodoPago, int idUsuario)
         {
             using SqlConnection cn = new SqlConnection(config["ConnectionStrings:CafeteriaSQL"]);
             cn.Open();
@@ -75,6 +76,8 @@ namespace Cafeteria2025_API_REST.DAO.Impl
 
             cmd.Parameters.AddWithValue("@idPedido", idPedido);
             cmd.Parameters.AddWithValue("@idMetodoPago", idMetodoPago);
+            cmd.Parameters.AddWithValue("@idUsuario", idUsuario);
+
 
             cmd.ExecuteNonQuery();
         }
@@ -211,5 +214,87 @@ namespace Cafeteria2025_API_REST.DAO.Impl
             return lista;
         }
 
+        public PaginacionRespuestaDto<object> PaginacionPedidosOperativos(int pagina, int tamanoPagina)
+        {
+            PaginacionRespuestaDto<object> response = new();
+
+            using SqlConnection cn = new SqlConnection(config["ConnectionStrings:CafeteriaSQL"]);
+            cn.Open();
+
+            SqlCommand cmd = new SqlCommand("USP_PaginacionPedidosOperativos", cn);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@pagina", pagina);
+            cmd.Parameters.AddWithValue("@tamanoPagina", tamanoPagina);
+
+            SqlDataReader dr = cmd.ExecuteReader();
+            if(dr.Read())
+            {
+                int totalRegistros = dr.GetInt32(0);
+                response.TotalRegistros = totalRegistros;
+                response.TotalPaginas = totalRegistros % tamanoPagina == 0 ?
+                                        totalRegistros / tamanoPagina :
+                                        totalRegistros / tamanoPagina + 1;
+                response.PaginaActual = pagina;
+                response.TamanoPagina = tamanoPagina;
+            }
+
+            dr.NextResult();
+            while (dr.Read())
+            {
+                response.Datos.Add(new
+                {
+                    IdPedido = dr.GetInt32(0),
+                    Cliente = dr.GetString(1),
+                    Fecha = dr.GetDateTime(2),
+                    Estado = dr.GetString(3),
+                    Total = dr.GetDecimal(4),
+                    CodigoRecojo = dr.GetString(5)
+                });
+            }
+            return response;
+        }
+
+        public PaginacionRespuestaDto<object> PaginacionHistorialPedidosUsuario(int idUsuario, int pagina, int tamanoPagina)
+        {
+            var response = new PaginacionRespuestaDto<object>();
+
+            using SqlConnection cn = new(config["ConnectionStrings:CafeteriaSQL"]);
+            using SqlCommand cmd = new("USP_Paginacion_Historial_Pedidos_Usuario", cn);
+
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@idUsuario", idUsuario);
+            cmd.Parameters.AddWithValue("@pagina", pagina);
+            cmd.Parameters.AddWithValue("@tamanoPagina", tamanoPagina);
+
+            cn.Open();
+            using var dr = cmd.ExecuteReader();
+
+            if (dr.Read())
+            {
+                int totalRegistros = dr.GetInt32(0);
+                response.TotalRegistros = totalRegistros;
+                response.TotalPaginas = totalRegistros % tamanoPagina == 0 ?
+                                        totalRegistros / tamanoPagina :
+                                        totalRegistros / tamanoPagina + 1;
+                response.PaginaActual = pagina;
+                response.TamanoPagina = tamanoPagina;
+            }
+
+            dr.NextResult();
+            while (dr.Read())
+            {
+                response.Datos.Add(new
+                {
+                    IdPedido = dr.GetInt32(0),
+                    Fecha = dr.GetDateTime(1),
+                    Estado = dr.GetString(2),
+                    Total = dr.GetDecimal(3),
+                    ClienteRecoge = dr.GetString(4),
+                    CodigoRecojo = dr.GetString(5)
+                });
+            }
+
+            return response;
+        }
     }
 }

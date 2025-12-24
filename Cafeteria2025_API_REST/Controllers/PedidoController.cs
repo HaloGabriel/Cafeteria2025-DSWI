@@ -1,12 +1,16 @@
 ﻿using Cafeteria2025_API_REST.DAO;
 using Cafeteria2025_API_REST.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Cafeteria2025_API_REST.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/pedidos")]
+    [Authorize]
+
     public class PedidoController : ControllerBase
     {
         private readonly IPedidoDAO _dao;
@@ -17,118 +21,125 @@ namespace Cafeteria2025_API_REST.Controllers
         }
 
         // ===============================
-        // AGREGAR AL PEDIDO
+        // AGREGAR PRODUCTO
         // ===============================
-        [HttpPost("agregar")]public IActionResult Agregar(int idUsuario, int idProducto, int cantidad)
+        [Authorize(Roles = "admin,cliente")]
+        [HttpPost("agregar")]
+        public IActionResult Agregar(int idProducto, int cantidad)
         {
+            int idUsuario = ObtenerIdUsuario();
             int idPedido = _dao.ObtenerOCrearPedidoGenerado(idUsuario);
-            _dao.AgregarProducto(idPedido, idProducto, cantidad);
 
-            return Ok("Producto agregado al pedido (carrito)");
+            _dao.AgregarProducto(idPedido, idProducto, cantidad);
+            return Ok("Producto agregado al carrito");
         }
 
         // ===============================
-        // VER PEDIDO (CARRITO) DEL USUARIO
+        // VER CARRITO
         // ===============================
-        [HttpGet("carrito/{idUsuario}")]public IActionResult VerCarrito(int idUsuario)
+        [Authorize(Roles = "admin,cliente")]
+        [HttpGet("carrito")]
+        public IActionResult VerCarrito()
         {
+            int idUsuario = ObtenerIdUsuario();
             return Ok(_dao.ListarPedidoGenerado(idUsuario));
         }
 
         // ===============================
-        // DESCUENTO DEL STOCK (PAGO)
+        // CHECKOUT (PAGO)
         // ===============================
-        [HttpPost("checkout")]public IActionResult Checkout(int idPedido, int idMetodoPago)
+        [Authorize(Roles = "admin,cliente")]
+        [HttpPost("checkout")]
+        public IActionResult Checkout(int idPedido, int idMetodoPago)
         {
-            try
-            {
-                _dao.ConfirmarPedido(idPedido, idMetodoPago);
-                return Ok("Pedido confirmado y stock descontado");
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            int idUsuario = ObtenerIdUsuario();
+            _dao.ConfirmarPedido(idPedido, idMetodoPago, idUsuario);
+
+            return Ok("Pedido confirmado");
         }
 
         // ===============================
-        // CANCELAR PEDIDO
+        // HISTORIAL
         // ===============================
-        [HttpPost("cancelar")]public IActionResult Cancelar(int idPedido)
+        [Authorize(Roles = "admin,cliente")]
+        [HttpGet("historial")]
+        public IActionResult Historial()
         {
-            try
-            {
-                _dao.CancelarPedido(idPedido);
-                return Ok("Pedido cancelado y stock devuelto");
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            int idUsuario = ObtenerIdUsuario();
+            return Ok(_dao.ListarHistorialPedidosUsuario(idUsuario));
+        }
+
+        [Authorize(Roles = "admin,cliente")]
+        [HttpGet("historial/paginado")]
+        public IActionResult HistorialPaginado( [FromQuery] int pagina = 1, [FromQuery] int tamano = 10)
+        {
+            int idUsuario = int.Parse(
+                User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value
+            );
+
+            return Ok(_dao.PaginacionHistorialPedidosUsuario(idUsuario, pagina, tamano));
+        }
+
+
+        // ===============================
+        // CANCELAR
+        // ===============================
+        [Authorize(Roles = "admin,vendedor")]
+        [HttpPost("cancelar")]
+        public IActionResult Cancelar(int idPedido)
+        {
+            _dao.CancelarPedido(idPedido);
+            return Ok("Pedido cancelado");
         }
 
         // ===============================
-        // COLOCAR ESTADO AL PEDIDO (PARA LOS BOTONES)
+        // CAMBIAR ESTADO
         // ===============================
-        [HttpPut("estado")] public IActionResult CambiarEstado(int idPedido, int idEstado)
+        [Authorize(Roles = "admin,vendedor")]
+        [HttpPut("estado")]
+        public IActionResult CambiarEstado(int idPedido, int idEstado)
         {
-            try
-            {
-                _dao.CambiarEstadoPedido(idPedido, idEstado);
-                return Ok("Estado del pedido actualizado");
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            _dao.CambiarEstadoPedido(idPedido, idEstado);
+            return Ok("Estado actualizado");
         }
 
         // ===============================
-        // VER TODOS LOS PEDIDOS OPERATIVOS
+        // OPERATIVOS
         // ===============================
-        [HttpGet("operativos")]public IActionResult PedidosOperativos()
+        [Authorize(Roles = "admin")]
+        [HttpGet("operativos")]
+        public IActionResult Operativos()
         {
             return Ok(_dao.ListarPedidosOperativos());
         }
 
-        // ===============================
-        // AGREGAR PERSONALIZACIÓN AL PRODUCTO DEL PEDIDO
-        // ===============================
-        [HttpPost("agregar-personalizado")]public IActionResult AgregarPersonalizado([FromBody] AgregarProductoPersonalizado req)
+        [Authorize(Roles = "admin")]
+        [HttpGet("operativos/paginado")]
+        public IActionResult PedidosOperativosPaginado( [FromQuery] int pagina = 1, [FromQuery] int tamano = 10)
         {
-            try
-            {
-                _dao.AgregarProductoPersonalizado(
-                    req.IdUsuario,
-                    req.IdProducto,
-                    req.Cantidad,
-                    req.Opciones
-                );
-
-                return Ok("Producto agregado al carrito con personalización");
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            return Ok(_dao.PaginacionPedidosOperativos(pagina, tamano));
         }
 
-        // ===============================
-        // HISTORIAL POR CLIENTE
-        // ===============================
-        [HttpGet("historial/{idUsuario}")] public IActionResult Historial(int idUsuario)
-        {
-            return Ok(_dao.ListarHistorialPedidosUsuario(idUsuario));
-        }
+
 
         // ===============================
-        // REPORTES
+        // REPORTE
         // ===============================
-        [HttpGet("reporte/general")] public IActionResult ReporteGeneral()
+        [Authorize(Roles = "admin")]
+        [HttpGet("reporte/general")]
+        public IActionResult ReporteGeneral()
         {
             return Ok(_dao.ReportePedidosGeneral());
         }
 
-
+        // ===============================
+        // HELPER
+        // ===============================
+        private int ObtenerIdUsuario()
+        {
+            return int.Parse(
+                User.FindFirst(ClaimTypes.NameIdentifier)!.Value
+            );
+        }
     }
 }

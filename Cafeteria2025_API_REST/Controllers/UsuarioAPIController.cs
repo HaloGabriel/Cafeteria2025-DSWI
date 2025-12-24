@@ -1,5 +1,6 @@
 ﻿using Cafeteria2025_API_REST.DAO;
 using Cafeteria2025_API_REST.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,6 +8,7 @@ namespace Cafeteria2025_API_REST.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "admin")]
     public class UsuarioAPIController : ControllerBase
     {
         private readonly IUsuarioDAO _usudao;
@@ -22,6 +24,13 @@ namespace Cafeteria2025_API_REST.Controllers
         [HttpGet("Listar Usuarios")]
         public async Task<IActionResult> Listar()
         => Ok(await _usudao.Listar());
+
+        // ===============================
+        // PAGINACIÓN USUARIOS
+        // ===============================
+        [HttpGet("Paginacion")]
+        public async Task<IActionResult> Paginacion(int p = 1, int t = 10)
+        => Ok(await _usudao.Paginacion(p, t));
 
         // ===============================
         // BUSCAR POR ID

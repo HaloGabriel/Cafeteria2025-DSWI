@@ -1,5 +1,6 @@
 ﻿using Cafeteria2025_API_REST.DAO;
 using Cafeteria2025_API_REST.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,6 +8,7 @@ namespace Cafeteria2025_API_REST.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class TamanioAPIController : ControllerBase
     {
         private ITamanioDAO _tamDAO;
@@ -18,13 +20,17 @@ namespace Cafeteria2025_API_REST.Controllers
         // ===============================
         // LISTAR TAMAÑOS
         // ===============================
-        [HttpGet("Listar Tamaños")] public async Task<IActionResult> Listar()
+        [HttpGet("Listar Tamaños")]
+        [Authorize(Roles = "admin,cliente")]
+        public async Task<IActionResult> Listar()
 => Ok(await _tamDAO.Listar());
 
         // ===============================
         // BUSCAR POR ID
         // ===============================
-        [HttpGet("{id}")] public async Task<IActionResult> Buscar(byte id)
+        [HttpGet("{id}")]
+        [Authorize(Roles = "admin,cliente")]
+        public async Task<IActionResult> Buscar(byte id)
         {
             var t = await _tamDAO.Buscar(id);
             return t is null ? NotFound() : Ok(t);
@@ -33,19 +39,24 @@ namespace Cafeteria2025_API_REST.Controllers
         // ===============================
         // INSERTAR TAMAÑOS
         // ===============================
-        [HttpPost("Insertar tamaño")] public async Task<IActionResult> Insertar([FromBody] Tamano tam)
+        [HttpPost("Insertar tamaño")]
+        [Authorize(Roles = "admin")]
+        public async Task<IActionResult> Insertar([FromBody] Tamano tam)
             => Ok(await _tamDAO.Insertar(tam));
 
         // ===============================
         // ACTUALIZAR POR ID
         // ===============================
-        [HttpPut("{id}")] public async Task<IActionResult> Actualizar(byte id, [FromBody] Tamano tam)
+        [HttpPut("{id}")]
+        [Authorize(Roles = "admin")]
+        public async Task<IActionResult> Actualizar(byte id, [FromBody] Tamano tam)
             => Ok(await _tamDAO.Actualizar(id, tam));
 
         // ===============================
         // DESACTIVAR POR ID
         // ===============================
         [HttpDelete("{id}")]
+        [Authorize(Roles = "admin")]
         public async Task<IActionResult> Desactivar(byte id)
         {
             await _tamDAO.Desactivar(id);

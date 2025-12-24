@@ -196,6 +196,22 @@ AS
   END
 GO
 
+--Paginación de categorías para el CRUD
+CREATE OR ALTER PROCEDURE USP_Paginacion_Categorias
+@pagina Int, @tamanoPagina Int
+AS
+  BEGIN
+    SELECT COUNT(*)
+    FROM Categoria;
+
+    SELECT *
+    FROM Categoria
+    ORDER BY IdCategoria ASC
+    OFFSET ((@pagina - 1) * @tamanoPagina) ROWS
+    FETCH NEXT @tamanoPagina ROWS ONLY;
+  END
+GO
+
 --Listado de categorías para desplegables
 CREATE OR ALTER PROCEDURE USP_Listar_Categorias_Descripcion_Asc
 AS
@@ -243,7 +259,7 @@ GO
 --Mostrar en el listado los 5 datos más importantes de los productos (mientas estén activos)
 CREATE OR ALTER PROCEDURE USP_Listar_Productos
 AS
-BEGIN
+  BEGIN
     SELECT prod.IdProducto,
            prod.Nombre,
            cate.Descripcion,
@@ -252,6 +268,28 @@ BEGIN
     FROM Producto prod
     JOIN Categoria cate ON prod.IdCategoria = cate.IdCategoria
     WHERE prod.Activo = 1;
+  END
+GO
+
+CREATE OR ALTER PROCEDURE USP_PaginacionProductos
+@pagina Int, @tamanoPagina Int
+AS
+BEGIN
+    SELECT Count(*)
+    From Producto
+    WHERE Activo = 1;
+
+    SELECT prod.IdProducto,
+           prod.Nombre,
+           cate.Descripcion,
+           prod.PrecioBase,
+           prod.Stock
+    FROM Producto prod
+    JOIN Categoria cate ON prod.IdCategoria = cate.IdCategoria
+    WHERE prod.Activo = 1
+    ORDER BY prod.IdProducto ASC
+    OFFSET ((@pagina - 1) * @tamanoPagina) ROWS
+    FETCH NEXT @tamanoPagina ROWS ONLY;
 END
 GO
 
@@ -499,46 +537,6 @@ BEGIN
 END
 GO
 
-/* CONFIRMAR PEDIDO */
-CREATE OR ALTER PROCEDURE USP_ConfirmarPedido
-@idPedido INT,
-@idMetodoPago TINYINT
-AS
-BEGIN
-    BEGIN TRY
-        BEGIN TRAN;
-
-        /* 1. Validar stock */
-        EXEC USP_ValidarStockPedido @idPedido;
-
-        /* 2. Descontar stock */
-        EXEC USP_DescontarStockPedido @idPedido;
-
-        /* 3. Calcular TOTAL del pedido */
-        DECLARE @total DECIMAL(12,2);
-
-        SELECT @total = ISNULL(SUM(Subtotal), 0)
-        FROM DetallePedido
-        WHERE IdPedido = @idPedido;
-
-        /* 4. Actualizar pedido */
-        UPDATE Pedido
-        SET TotalPagar = @total,
-            IdEstadoPedido = 2, -- Preparando
-            IdMetodoPago = @idMetodoPago,
-            FechaActualizacion = SYSDATETIME()
-        WHERE IdPedido = @idPedido;
-
-        COMMIT;
-    END TRY
-    BEGIN CATCH
-        ROLLBACK;
-        THROW;
-    END CATCH
-END
-GO
-
-
 /* DEVOLVER STOCK DEL PEDIDO */
 CREATE OR ALTER PROCEDURE USP_DevolverStockPedido
 @idPedido INT
@@ -650,6 +648,33 @@ BEGIN
 END
 GO
 
+/* PAGINACIÓN PEDIDOS OPERATIVOS */
+CREATE OR ALTER PROCEDURE USP_PaginacionPedidosOperativos
+@pagina Int, @tamanoPagina Int
+AS
+  BEGIN
+    SELECT COUNT(*)
+    FROM Pedido p
+    WHERE IdEstadoPedido IN (2, 3)
+      AND Activo = 1;
+
+    SELECT p.IdPedido,
+           u.Nombre + ' ' + u.Apellido AS Cliente,
+           p.FechaPedido,
+           ep.Descripcion AS Estado,
+           p.TotalPagar,
+           p.CodigoRecojo
+    FROM Pedido p
+    JOIN Usuario u ON p.IdUsuario = u.IdUsuario
+    JOIN EstadoPedido ep ON p.IdEstadoPedido = ep.IdEstadoPedido
+    WHERE p.IdEstadoPedido IN (2, 3)
+      AND p.Activo = 1
+    ORDER BY p.FechaPedido ASC
+    OFFSET ((@pagina - 1) * @tamanoPagina) ROWS
+    FETCH NEXT @tamanoPagina ROWS ONLY;
+  END
+GO
+
 
 
 
@@ -660,8 +685,18 @@ VALUES
     ('Efectivo', 1),
     ('Transferencia Bancaria', 1),
     ('PayPal', 1),
-    ('Criptomonedas', 0); -- Ejemplo de un método inactivo
+    ('Criptomonedas', 0) -- Ejemplo de un método inactivo
+GO
 
+CREATE OR ALTER PROCEDURE USP_ListarMetodosPagoActivos
+AS
+  BEGIN
+    SELECT CAST(IdMetodoPago AS INT),
+           Nombre
+    FROM MetodoPago
+    WHERE Activo = 1
+  END
+GO
 
     /* PERSONALIZACIÓN */
 
@@ -948,6 +983,35 @@ BEGIN
 END
 GO
 
+/* PAGINACIÓN USUARIO */
+CREATE OR ALTER PROCEDURE USP_Paginacion_Usuarios
+@pagina INT, @tamanoPagina INT
+AS
+BEGIN
+    SELECT COUNT(*)
+    FROM Usuario
+    WHERE Activo = 1;
+
+    SELECT
+        IdUsuario,
+        Nombre,
+        Apellido,
+        Email,
+        PasswordHash,
+        Telefono,
+        IdRol,                 
+        Activo,
+        FechaRegistro,
+        FechaActualizacion,
+        UsuarioActualizacion
+    FROM Usuario
+    WHERE Activo = 1
+    ORDER BY IdUsuario ASC
+    OFFSET ((@pagina - 1) * @tamanoPagina) ROWS
+    FETCH NEXT @tamanoPagina ROWS ONLY;
+END
+GO
+
 
 
 /* BUSCAR POR ID */
@@ -1082,6 +1146,33 @@ BEGIN
 END
 GO
 
+/* PAGINACIÓN DE HISTORIAL POR USUARIO */
+CREATE OR ALTER PROCEDURE USP_Paginacion_Historial_Pedidos_Usuario
+@idUsuario INT, @pagina INT, @tamanoPagina INT
+AS
+BEGIN
+    SELECT COUNT(*)
+    FROM Pedido
+    WHERE IdUsuario = @idUsuario
+      AND Activo = 1;
+
+    SELECT
+        p.IdPedido,
+        p.FechaPedido,
+        ep.Descripcion AS Estado,
+        p.TotalPagar,
+        p.NombreClienteRecoge,
+        p.CodigoRecojo
+    FROM Pedido p
+    JOIN EstadoPedido ep ON p.IdEstadoPedido = ep.IdEstadoPedido
+    WHERE p.IdUsuario = @idUsuario
+      AND p.Activo = 1
+    ORDER BY p.FechaPedido DESC
+    OFFSET ((@pagina - 1) * @tamanoPagina) ROWS
+    FETCH NEXT @tamanoPagina ROWS ONLY;
+END
+GO
+
 /* REPORTE GENERAL DE PEDIDOS */
 CREATE OR ALTER PROCEDURE USP_Reporte_Pedidos_General
 AS
@@ -1094,5 +1185,55 @@ BEGIN
     JOIN EstadoPedido ep ON p.IdEstadoPedido = ep.IdEstadoPedido
     WHERE p.Activo = 1
     GROUP BY ep.Descripcion;
+END
+GO
+/* Modificado 23/12 */
+/* CONFIRMAR PEDIDO */
+CREATE OR ALTER PROCEDURE USP_ConfirmarPedido
+@idPedido INT,
+@idMetodoPago TINYINT,
+@idUsuario INT
+AS
+BEGIN
+    BEGIN TRY
+        BEGIN TRAN;
+
+        -- Validar que el pedido sea del usuario
+        IF NOT EXISTS (
+            SELECT 1
+            FROM Pedido
+            WHERE IdPedido = @idPedido
+              AND IdUsuario = @idUsuario
+              AND IdEstadoPedido = 1
+              AND Activo = 1
+        )
+        BEGIN
+            RAISERROR('Pedido no válido o no pertenece al usuario', 16, 1);
+            ROLLBACK;
+            RETURN;
+        END
+
+        EXEC USP_ValidarStockPedido @idPedido;
+        EXEC USP_DescontarStockPedido @idPedido;
+
+        DECLARE @total DECIMAL(12,2);
+
+        SELECT @total = ISNULL(SUM(Subtotal), 0)
+        FROM DetallePedido
+        WHERE IdPedido = @idPedido;
+
+        UPDATE Pedido
+        SET TotalPagar = @total,
+            IdEstadoPedido = 2,
+            IdMetodoPago = @idMetodoPago,
+            FechaActualizacion = SYSDATETIME()
+        WHERE IdPedido = @idPedido;
+
+        COMMIT;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK;
+        THROW;
+    END CATCH
 END
 GO
